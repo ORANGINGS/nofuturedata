@@ -179,7 +179,7 @@ jobs:
   nofuture:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: ORANGINGS/nofuturedata@v0.2.0
         with:
           path: src
@@ -194,7 +194,7 @@ permissions:
   security-events: write
 
 steps:
-  - uses: actions/checkout@v4
+  - uses: actions/checkout@v7
   - uses: ORANGINGS/nofuturedata@v0.2.0
     with:
       path: .
