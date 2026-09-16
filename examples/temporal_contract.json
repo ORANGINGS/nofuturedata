@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "datasets": [
+    {
+      "path": "safe_vintages.csv",
+      "format": "csv",
+      "event_time": {
+        "column": "event_time",
+        "semantics": "observation_period"
+      },
+      "known_at": {
+        "column": "known_at",
+        "semantics": "first_observed_by_consumer"
+      },
+      "eligible_from": {
+        "policy": "explicit_column",
+        "column": "eligible_from"
+      },
+      "timezone": "offset-aware",
+      "revision": {
+        "policy": "append_only_vintages",
+        "key": ["series_id", "event_time"]
+      },
+      "null_reason": {
+        "policy": "required_when_value_missing",
+        "column": "null_reason",
+        "value_columns": ["value"]
+      }
+    }
+  ]
+}

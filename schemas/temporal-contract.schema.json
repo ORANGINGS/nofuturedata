@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/ORANGINGS/nofuturedata/v0/schemas/temporal-contract.schema.json",
+  "title": "NoFutureData temporal contract",
+  "type": "object",
+  "required": ["schema_version", "datasets"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "datasets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/dataset"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "columnSemantics": {
+      "type": "object",
+      "required": ["column", "semantics"],
+      "properties": {
+        "column": {"type": "string", "minLength": 1},
+        "semantics": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "path",
+        "event_time",
+        "known_at",
+        "eligible_from",
+        "timezone",
+        "revision",
+        "null_reason"
+      ],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "format": {"const": "csv"},
+        "event_time": {"$ref": "#/$defs/columnSemantics"},
+        "known_at": {"$ref": "#/$defs/columnSemantics"},
+        "eligible_from": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["policy", "column"],
+              "properties": {
+                "policy": {"const": "explicit_column"},
+                "column": {"type": "string", "minLength": 1}
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["policy"],
+              "properties": {"policy": {"const": "known_at"}},
+              "additionalProperties": false
+            }
+          ]
+        },
+        "timezone": {"const": "offset-aware"},
+        "decision_time": {
+          "type": "object",
+          "required": ["column"],
+          "properties": {"column": {"type": "string", "minLength": 1}},
+          "additionalProperties": false
+        },
+        "revision": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["policy", "key"],
+              "properties": {
+                "policy": {"const": "append_only_vintages"},
+                "key": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"type": "string", "minLength": 1},
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["policy"],
+              "properties": {"policy": {"const": "none"}},
+              "additionalProperties": false
+            }
+          ]
+        },
+        "null_reason": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": ["policy", "column", "value_columns"],
+              "properties": {
+                "policy": {"const": "required_when_value_missing"},
+                "column": {"type": "string", "minLength": 1},
+                "value_columns": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"type": "string", "minLength": 1},
+                  "uniqueItems": true
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "required": ["policy"],
+              "properties": {"policy": {"const": "not_applicable"}},
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

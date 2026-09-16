@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "datasets": [
+    {
+      "path": "data.csv",
+      "known_at": {
+        "column": "known_at",
+        "semantics": "first_observed_by_consumer"
+      },
+      "eligible_from": {"policy": "known_at"},
+      "timezone": "offset-aware",
+      "revision": {"policy": "none"},
+      "null_reason": {"policy": "not_applicable"}
+    }
+  ]
+}

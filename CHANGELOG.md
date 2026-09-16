@@ -4,6 +4,20 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+## 0.4.0 - 2026-09-16
+
+- Add `nofuture audit-manifest` and the zero-dependency `audit_manifest()` API
+  for repository-level temporal data contracts.
+- Require explicit event-time/known-at semantics, eligible-from and revision
+  policies, offset-aware timestamps, and null-reason behavior.
+- Validate referenced CSV columns, optional decision-time causality, duplicate
+  revision availability times, explicit eligibility values, and unexplained
+  missing values.
+- Add a portable example manifest/dataset and run it in the Python compatibility
+  CI matrix.
+- Publish a Draft 2020-12 JSON Schema, valid/invalid fixtures, and stable
+  `MAN001`-`MAN007`, `TIME005`, `REV001`, and `NULL001` rule IDs.
+
 ## 0.3.0 - 2026-09-16
 
 - Add an optional pandas `point_in_time_join()` helper with backward-only as-of

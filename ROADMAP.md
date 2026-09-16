@@ -14,6 +14,12 @@ The project will prioritize evidence of real user pain over feature count.
 
 - Point-in-time joins for pandas with explicit availability columns.
 
+## Shipped in 0.4
+
+- Repository-level JSON temporal contracts for CSV datasets.
+- Revision/vintage ambiguity checks keyed by logical observation.
+- CI example for `nofuture audit-manifest`.
+
 ## Next
 
 - Point-in-time joins for Polars with explicit availability columns.
@@ -23,7 +29,6 @@ The project will prioritize evidence of real user pain over feature count.
 ## Later
 
 - Reusable CI policy file for repository-wide temporal contracts.
-- Dataset manifest checks for `known_at`, `eligible_from`, timezone, and revision semantics.
 - Expand the public corpus with real-world minimal reproductions contributed by users.
 
 ## Adoption evidence to publish

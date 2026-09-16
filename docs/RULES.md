@@ -84,6 +84,14 @@ as `%%bash` are skipped.
 Runtime checks are transform-agnostic. They are useful for custom feature code
 that a syntax rule cannot recognize.
 
+## Dataset manifest rules
+
+Repository-level temporal contracts use the `MAN001`-`MAN007`, `TIME005`,
+`REV001`, and `NULL001` rules documented in the
+[manifest reference](MANIFEST.html). Dataset rows also reuse the availability
+rules above, so a timezone-naive `known_at` remains `TIME001` whether it is
+checked directly or through a manifest.
+
 ## Severity and exit status
 
 Current rules are emitted as `error`. The CLI returns exit code `1` when any

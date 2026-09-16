@@ -77,9 +77,16 @@ FAIL: 2 finding(s)
     </section>
 
     <section style="margin-top:56px">
+      <h2>Make the dataset contract executable</h2>
+      <pre><code>$ nofuture audit-manifest temporal-contract.json
+PASS: 0 finding(s), 3 row/line(s) scanned</code></pre>
+      <p class="lede" style="margin:20px 0 0; text-align:left">Commit availability columns and revision keys as a small JSON contract, then fail CI when a dataset becomes temporally ambiguous. <a href="MANIFEST.html">Manifest reference</a>.</p>
+    </section>
+
+    <section style="margin-top:56px">
       <h2>Use it in one workflow step</h2>
       <pre><code>- uses: actions/checkout@v7
-- uses: ORANGINGS/nofuturedata@v0.3.0
+- uses: ORANGINGS/nofuturedata@v0.4.0
   with:
     path: src</code></pre>
       <p class="lede" style="margin:20px 0 0; text-align:left">Also available as a pre-commit hook, a Python API, a CLI, and SARIF output for GitHub Code Scanning.</p>

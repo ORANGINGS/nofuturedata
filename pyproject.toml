@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nofuturedata"
-version = "0.3.0"
+version = "0.4.0"
 description = "Fail-closed temporal leakage checks for time-series, ML, and backtests."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,6 +40,7 @@ nofuture = "nofuturedata.cli:main"
 
 [project.optional-dependencies]
 pandas = ["pandas>=2.1"]
+dev = ["pytest>=8", "jsonschema>=4.18"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -17,6 +17,7 @@ from .audit import (
     iter_source_files,
     report_to_sarif,
 )
+from .manifest import audit_manifest
 
 
 def _print_report(report: AuditReport, *, as_json: bool) -> None:
@@ -118,6 +119,13 @@ def build_parser() -> argparse.ArgumentParser:
     csv_cmd.add_argument("--eligible-from", default="eligible_from")
     csv_cmd.add_argument("--decision-time", default=None)
     csv_cmd.add_argument("--json", action="store_true")
+
+    manifest_cmd = sub.add_parser(
+        "audit-manifest",
+        help="validate a temporal-contract manifest and referenced datasets",
+    )
+    manifest_cmd.add_argument("manifest", type=Path)
+    manifest_cmd.add_argument("--json", action="store_true")
     return parser
 
 
@@ -133,6 +141,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
     elif args.command == "audit-csv":
         report = _audit_csv(args)
+    elif args.command == "audit-manifest":
+        report = audit_manifest(args.manifest)
     else:  # pragma: no cover - argparse prevents this
         raise AssertionError(args.command)
     _print_report(report, as_json=args.json)

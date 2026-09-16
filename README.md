@@ -23,10 +23,11 @@ mutating future inputs and verifying that past outputs do not change.
 NoFutureData is local and deterministic. The core has no mandatory runtime
 dependency or network service; the dataframe join helper uses optional pandas.
 
-Use it three ways without adopting a backtesting framework:
+Use it four ways without adopting a backtesting framework:
 
 - `nofuture scan` in CI/pre-commit for Python and Jupyter source review;
 - `audit_availability` / `as_of` for explicit point-in-time data contracts;
+- `nofuture audit-manifest` for repository-level dataset availability contracts;
 - prefix and future-mutation invariance checks for custom feature pipelines.
 
 ## Why this exists
@@ -52,7 +53,7 @@ decision that consumes it.
 Install the signed-off release wheel directly from GitHub:
 
 ```bash
-python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.3.0/nofuturedata-0.3.0-py3-none-any.whl
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.4.0/nofuturedata-0.4.0-py3-none-any.whl
 ```
 
 The release also includes `SHA256SUMS.txt`. For editable development from a
@@ -130,7 +131,59 @@ All timestamps must carry a timezone. Duplicate right rows with the same `by`
 keys and availability timestamp fail closed instead of letting dataframe row
 order silently choose a revision.
 
-## 4. Scan Python and Jupyter source
+## 4. Enforce dataset temporal contracts in CI
+
+Commit a small JSON manifest next to the data contract:
+
+```json
+{
+  "schema_version": 1,
+  "datasets": [
+    {
+      "path": "data/vintages.csv",
+      "format": "csv",
+      "event_time": {
+        "column": "event_time",
+        "semantics": "observation_period"
+      },
+      "known_at": {
+        "column": "known_at",
+        "semantics": "first_observed_by_consumer"
+      },
+      "eligible_from": {
+        "policy": "explicit_column",
+        "column": "eligible_from"
+      },
+      "timezone": "offset-aware",
+      "revision": {
+        "policy": "append_only_vintages",
+        "key": ["series_id", "event_time"]
+      },
+      "null_reason": {
+        "policy": "required_when_value_missing",
+        "column": "null_reason",
+        "value_columns": ["value"]
+      }
+    }
+  ]
+}
+```
+
+Then validate the referenced data:
+
+```bash
+nofuture audit-manifest temporal-contract.json
+```
+
+The validator requires explicit event-time and known-at semantics, an
+eligible-from policy, offset-aware timestamps, a revision policy, and a null
+reason policy. It also checks required columns, optional decision-time
+causality, ambiguous revision timestamps, and missing-value explanations.
+Dataset paths are relative to the manifest, making the contract portable in CI.
+See the [manifest reference](docs/MANIFEST.md) and the portable
+[JSON Schema](schemas/temporal-contract.schema.json) for the full format.
+
+## 5. Scan Python and Jupyter source
 
 ```bash
 nofuture scan src/
@@ -183,7 +236,7 @@ For GitHub Code Scanning or another SARIF consumer:
 nofuture scan src notebooks --sarif nofuturedata.sarif
 ```
 
-## 5. Test the pipeline, not only the syntax
+## 6. Test the pipeline, not only the syntax
 
 Static scanning cannot catch arbitrary code. Runtime invariance checks can.
 
@@ -237,7 +290,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ORANGINGS/nofuturedata@v0.3.0
+      - uses: ORANGINGS/nofuturedata@v0.4.0
         with:
           path: src
 ```
@@ -252,7 +305,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: ORANGINGS/nofuturedata@v0.3.0
+  - uses: ORANGINGS/nofuturedata@v0.4.0
     with:
       path: .
       sarif: nofuturedata.sarif
@@ -264,7 +317,7 @@ steps:
 ```yaml
 repos:
   - repo: https://github.com/ORANGINGS/nofuturedata
-    rev: v0.3.0
+    rev: v0.4.0
     hooks:
       - id: nofuturedata
 ```
@@ -301,6 +354,8 @@ provider-specific publication semantics still need domain-specific review.
   cross-domain reproducibility and engineering problem, plus the scope of this tool.
 - [Rule reference](docs/RULES.md) — stable rule IDs, rationale, suppressions,
   and runtime invariance semantics.
+- [Temporal contract manifests](docs/MANIFEST.md) — repository-level dataset
+  availability and revision contracts.
 - [PyPI publishing](docs/PYPI_PUBLISHING.md) — tokenless OIDC release workflow
   and the one-time Trusted Publisher setup.
 - [Roadmap](ROADMAP.md) — next candidate capabilities and adoption evidence.
