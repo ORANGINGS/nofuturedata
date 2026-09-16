@@ -4,6 +4,9 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+- Add an evidence-backed ecosystem-importance note explaining the cross-domain
+  temporal leakage problem and how NoFutureData complements framework-specific tools.
+
 ## 0.2.3 - 2026-09-16
 
 - Harden composite Action inputs by passing user-controlled path values through

@@ -277,6 +277,8 @@ provider-specific publication semantics still need domain-specific review.
 
 ## Documentation
 
+- [Why this matters](docs/WHY.md) — evidence for temporal leakage as a
+  cross-domain reproducibility and engineering problem, plus the scope of this tool.
 - [Rule reference](docs/RULES.md) — stable rule IDs, rationale, suppressions,
   and runtime invariance semantics.
 - [PyPI publishing](docs/PYPI_PUBLISHING.md) — tokenless OIDC release workflow
