@@ -32,14 +32,15 @@ jobs:
         uses: ./
         with:
           path: src
-      - name: action input injection smoke test
-        id: injection-smoke
-        continue-on-error: true
-        uses: ./
-        with:
-          path: 'src"; touch /tmp/nofuturedata-injected; echo "'
-      - name: verify action input stayed data
+      - name: prepare adversarial but valid path
         shell: bash
         run: |
-          test "${{ steps.injection-smoke.outcome }}" = "failure"
-          test ! -e /tmp/nofuturedata-injected
+          mkdir -p 'src"; touch nofuturedata-injected; echo "'
+          printf 'x = 1\n' > 'src"; touch nofuturedata-injected; echo "/safe.py'
+      - name: action input injection smoke test
+        uses: ./
+        with:
+          path: 'src"; touch nofuturedata-injected; echo "'
+      - name: verify action input stayed data
+        shell: bash
+        run: test ! -e nofuturedata-injected

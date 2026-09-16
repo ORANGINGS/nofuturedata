@@ -8,7 +8,8 @@ All notable changes to NoFutureData are documented here.
 
 - Harden composite Action inputs by passing user-controlled path values through
   environment variables instead of interpolating them into shell source.
-- Add a CI regression test proving shell metacharacters in Action inputs remain data.
+- Add a CI regression test proving a valid path containing shell metacharacters
+  remains data and does not execute as shell source.
 - Ignore local downloaded workflow artifacts to prevent accidental commits.
 
 ## 0.2.2 - 2026-09-16
