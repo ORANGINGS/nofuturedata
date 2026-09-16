@@ -250,6 +250,14 @@ provider-specific publication semantics still need domain-specific review.
 5. **Provider-agnostic core.** Finance is one use case; the same problem appears
    in forecasting, recommender systems, operations, experimentation, and ML.
 
+## Documentation
+
+- [Rule reference](docs/RULES.md) — stable rule IDs, rationale, suppressions,
+  and runtime invariance semantics.
+- [PyPI publishing](docs/PYPI_PUBLISHING.md) — tokenless OIDC release workflow
+  and the one-time Trusted Publisher setup.
+- [Roadmap](ROADMAP.md) — next candidate capabilities and adoption evidence.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Synthetic minimal reproductions are

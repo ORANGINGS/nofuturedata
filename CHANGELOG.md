@@ -2,6 +2,12 @@
 
 All notable changes to NoFutureData are documented here.
 
+## Unreleased
+
+- Add a tokenless, manually gated PyPI Trusted Publishing workflow.
+- Add a stable rule reference.
+- Add weekly Dependabot maintenance for GitHub Actions and Python build tooling.
+
 ## 0.2.0 - 2026-09-16
 
 - Scan Python code cells in Jupyter notebooks.
