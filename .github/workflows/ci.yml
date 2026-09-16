@@ -32,3 +32,14 @@ jobs:
         uses: ./
         with:
           path: src
+      - name: action input injection smoke test
+        id: injection-smoke
+        continue-on-error: true
+        uses: ./
+        with:
+          path: 'src"; touch /tmp/nofuturedata-injected; echo "'
+      - name: verify action input stayed data
+        shell: bash
+        run: |
+          test "${{ steps.injection-smoke.outcome }}" = "failure"
+          test ! -e /tmp/nofuturedata-injected

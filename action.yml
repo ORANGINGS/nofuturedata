@@ -26,12 +26,15 @@ runs:
       run: python -m pip install "${{ github.action_path }}"
     - id: scan
       shell: bash
+      env:
+        NOFUTURE_PATH: ${{ inputs.path }}
+        NOFUTURE_SARIF: ${{ inputs.sarif }}
       run: |
         set +e
-        if [ -n "${{ inputs.sarif }}" ]; then
-          nofuture scan "${{ inputs.path }}" --sarif "${{ inputs.sarif }}"
+        if [ -n "$NOFUTURE_SARIF" ]; then
+          nofuture scan "$NOFUTURE_PATH" --sarif "$NOFUTURE_SARIF"
         else
-          nofuture scan "${{ inputs.path }}"
+          nofuture scan "$NOFUTURE_PATH"
         fi
         status=$?
         echo "status=$status" >> "$GITHUB_OUTPUT"

@@ -52,7 +52,7 @@ decision that consumes it.
 Install the signed-off release wheel directly from GitHub:
 
 ```bash
-python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.2/nofuturedata-0.2.2-py3-none-any.whl
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.3/nofuturedata-0.2.3-py3-none-any.whl
 ```
 
 The release also includes `SHA256SUMS.txt`. For editable development from a
@@ -217,7 +217,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ORANGINGS/nofuturedata@v0.2.2
+      - uses: ORANGINGS/nofuturedata@v0.2.3
         with:
           path: src
 ```
@@ -232,7 +232,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: ORANGINGS/nofuturedata@v0.2.2
+  - uses: ORANGINGS/nofuturedata@v0.2.3
     with:
       path: .
       sarif: nofuturedata.sarif
@@ -244,7 +244,7 @@ steps:
 ```yaml
 repos:
   - repo: https://github.com/ORANGINGS/nofuturedata
-    rev: v0.2.2
+    rev: v0.2.3
     hooks:
       - id: nofuturedata
 ```

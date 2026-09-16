@@ -4,6 +4,13 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+## 0.2.3 - 2026-09-16
+
+- Harden composite Action inputs by passing user-controlled path values through
+  environment variables instead of interpolating them into shell source.
+- Add a CI regression test proving shell metacharacters in Action inputs remain data.
+- Ignore local downloaded workflow artifacts to prevent accidental commits.
+
 ## 0.2.2 - 2026-09-16
 
 - Add a deterministic public planted-leak corpus and run it in CI.
