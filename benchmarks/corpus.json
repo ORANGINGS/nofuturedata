@@ -1,0 +1,74 @@
+[
+  {
+    "id": "negative-shift-positional",
+    "kind": "leak",
+    "expected": ["SRC001"],
+    "source": "feature = df.value.shift(-1)\n"
+  },
+  {
+    "id": "negative-shift-keyword",
+    "kind": "leak",
+    "expected": ["SRC001"],
+    "source": "feature = df.value.shift(periods=-3)\n"
+  },
+  {
+    "id": "positive-shift",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.shift(1)\n"
+  },
+  {
+    "id": "backfill",
+    "kind": "leak",
+    "expected": ["SRC002"],
+    "source": "feature = df.value.bfill()\n"
+  },
+  {
+    "id": "forward-fill",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.ffill()\n"
+  },
+  {
+    "id": "centered-rolling",
+    "kind": "leak",
+    "expected": ["SRC003"],
+    "source": "feature = df.value.rolling(5, center=True).mean()\n"
+  },
+  {
+    "id": "trailing-rolling",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.rolling(5).mean()\n"
+  },
+  {
+    "id": "forward-asof",
+    "kind": "leak",
+    "expected": ["SRC004"],
+    "source": "out = left.merge_asof(right, on='ts', direction='forward')\n"
+  },
+  {
+    "id": "nearest-asof",
+    "kind": "leak",
+    "expected": ["SRC004"],
+    "source": "out = left.merge_asof(right, on='ts', direction='nearest')\n"
+  },
+  {
+    "id": "backward-asof",
+    "kind": "safe",
+    "expected": [],
+    "source": "out = left.merge_asof(right, on='ts', direction='backward')\n"
+  },
+  {
+    "id": "targeted-suppression",
+    "kind": "safe",
+    "expected": [],
+    "source": "label = df.value.shift(-1)  # nofuture: ignore[SRC001]\n"
+  },
+  {
+    "id": "mixed-two-leaks",
+    "kind": "leak",
+    "expected": ["SRC001", "SRC003"],
+    "source": "lead = df.value.shift(-2)\ncentered = df.value.rolling(7, center=True).mean()\n"
+  }
+]

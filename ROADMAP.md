@@ -7,6 +7,8 @@ The project will prioritize evidence of real user pain over feature count.
 - SARIF output for GitHub code scanning.
 - Jupyter notebook scanning.
 - Pre-commit integration.
+- Public planted-leak corpus with safe controls and CI verification.
+- GitHub Pages landing page and Marketplace-ready Action metadata.
 
 ## Next
 
@@ -18,7 +20,7 @@ The project will prioritize evidence of real user pain over feature count.
 
 - Reusable CI policy file for repository-wide temporal contracts.
 - Dataset manifest checks for `known_at`, `eligible_from`, timezone, and revision semantics.
-- Benchmarks on public time-series examples with intentionally planted leakage.
+- Expand the public corpus with real-world minimal reproductions contributed by users.
 
 ## Adoption evidence to publish
 

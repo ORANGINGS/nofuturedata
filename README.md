@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/ORANGINGS/nofuturedata)](https://github.com/ORANGINGS/nofuturedata/releases)
 [![GitHub downloads](https://img.shields.io/github/downloads/ORANGINGS/nofuturedata/total)](https://github.com/ORANGINGS/nofuturedata/releases)
+[![Project site](https://img.shields.io/badge/site-NoFutureData-9b7cff)](https://orangings.github.io/nofuturedata/)
 
 **Zero-dependency temporal data-leakage linter and point-in-time guard for
 Python/Jupyter time-series, ML, forecasting, and backtests.**
@@ -51,7 +52,7 @@ decision that consumes it.
 Install the signed-off release wheel directly from GitHub:
 
 ```bash
-python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.1/nofuturedata-0.2.1-py3-none-any.whl
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.2/nofuturedata-0.2.2-py3-none-any.whl
 ```
 
 The release also includes `SHA256SUMS.txt`. For editable development from a
@@ -189,6 +190,20 @@ numeric values and verifies that already-produced output remains identical.
 
 This catches classes of leakage that simple source scanning misses.
 
+## Public planted-leak corpus
+
+The repository includes a deterministic corpus of intentionally leaking and safe
+controls. It exercises every shipped static rule and is executed on every CI run:
+
+```bash
+python benchmarks/run_benchmark.py
+```
+
+The current corpus contains 12 independently checked cases: 7 planted leaks and
+5 safe controls. A case passes only when the emitted rule IDs exactly equal its
+declared expectation. This is a regression corpus for the shipped rules, not a
+claim that the scanner detects every possible form of temporal leakage.
+
 ## GitHub Action
 
 Downstream projects can put a source scan in CI:
@@ -202,7 +217,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ORANGINGS/nofuturedata@v0.2.1
+      - uses: ORANGINGS/nofuturedata@v0.2.2
         with:
           path: src
 ```
@@ -217,7 +232,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: ORANGINGS/nofuturedata@v0.2.1
+  - uses: ORANGINGS/nofuturedata@v0.2.2
     with:
       path: .
       sarif: nofuturedata.sarif
@@ -229,7 +244,7 @@ steps:
 ```yaml
 repos:
   - repo: https://github.com/ORANGINGS/nofuturedata
-    rev: v0.2.1
+    rev: v0.2.2
     hooks:
       - id: nofuturedata
 ```

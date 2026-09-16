@@ -4,6 +4,13 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+## 0.2.2 - 2026-09-16
+
+- Add a deterministic public planted-leak corpus and run it in CI.
+- Add GitHub Marketplace branding metadata for the composite Action.
+- Add a lightweight GitHub Pages landing page for discoverability.
+- Move package licensing metadata to the current SPDX/PEP 639 form.
+
 ## 0.2.1 - 2026-09-16
 
 - Add a tokenless, manually gated PyPI Trusted Publishing workflow.

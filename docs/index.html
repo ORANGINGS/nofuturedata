@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NoFutureData catches temporal leakage and lookahead bias in Python and Jupyter before it reaches production or a backtest.">
+  <title>NoFutureData — Temporal Leakage Guard</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b0d12; --panel:#121722; --line:#263044; --text:#eef2f8; --muted:#aab5c6; --accent:#9b7cff; --good:#67d391; --bad:#ff7d8a; }
+    * { box-sizing:border-box; }
+    body { margin:0; font:16px/1.6 ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:radial-gradient(circle at 50% -20%,#222146 0,#0b0d12 42%); color:var(--text); }
+    a { color:#b9a7ff; }
+    .wrap { width:min(1100px,92vw); margin:auto; }
+    header { padding:84px 0 48px; text-align:center; }
+    h1 { margin:0 0 16px; font-size:clamp(42px,8vw,76px); letter-spacing:-.05em; }
+    h2 { margin-top:0; font-size:26px; }
+    .lede { max-width:760px; margin:0 auto 28px; color:var(--muted); font-size:19px; }
+    .buttons { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .button { text-decoration:none; border:1px solid var(--line); border-radius:10px; padding:10px 16px; background:var(--panel); color:var(--text); font-weight:650; }
+    .primary { background:var(--accent); border-color:var(--accent); color:#090a0f; }
+    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:26px 0 60px; }
+    .card { border:1px solid var(--line); border-radius:14px; padding:22px; background:rgba(18,23,34,.86); }
+    .card p { color:var(--muted); margin-bottom:0; }
+    pre { overflow:auto; border:1px solid var(--line); border-radius:12px; padding:18px; background:#080a0f; color:#dce5f3; }
+    .demo { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:20px 0 60px; }
+    .bad { color:var(--bad); font-weight:700; } .good { color:var(--good); font-weight:700; }
+    .bench { display:flex; align-items:baseline; gap:14px; margin:8px 0 6px; }
+    .score { font-size:52px; font-weight:800; letter-spacing:-.05em; }
+    footer { border-top:1px solid var(--line); margin-top:70px; padding:28px 0 48px; color:var(--muted); }
+    @media (max-width:800px) { .grid,.demo { grid-template-columns:1fr; } header { padding-top:54px; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>NoFutureData</h1>
+      <p class="lede">A zero-dependency temporal leakage guard for Python and Jupyter. Make the historical information boundary executable in CI.</p>
+      <div class="buttons">
+        <a class="button primary" href="https://github.com/ORANGINGS/nofuturedata">View on GitHub</a>
+        <a class="button" href="https://github.com/ORANGINGS/nofuturedata/releases/latest">Latest release</a>
+        <a class="button" href="RULES.md">Rule reference</a>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card"><h2>Point-in-time</h2><p>Separate event time from <code>known_at</code> and <code>eligible_from</code>, then fail closed when a historical decision sees unavailable data.</p></div>
+      <div class="card"><h2>Static guard</h2><p>Scan Python and Jupyter for negative shifts, backfills, centered windows, and forward/nearest as-of joins.</p></div>
+      <div class="card"><h2>Runtime proof</h2><p>Mutate or delete only future rows and verify that already-produced historical outputs stay invariant.</p></div>
+    </section>
+
+    <section>
+      <h2>Catch the leak before the metric looks amazing</h2>
+      <div class="demo">
+        <div>
+          <div class="bad">Leaking</div>
+          <pre><code># tomorrow's price in today's feature
+lead = price.shift(-1)
+
+# future rows in a centered window
+smooth = price.rolling(7, center=True).mean()</code></pre>
+        </div>
+        <div>
+          <div class="good">Guarded in CI</div>
+          <pre><code>$ nofuture scan src notebooks
+FAIL: 2 finding(s)
+[SRC001] negative shift can read future rows
+[SRC003] centered rolling windows can include future rows</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Public planted-leak corpus</h2>
+      <div class="bench"><span class="score">12/12</span><span class="good">reproducible cases pass</span></div>
+      <p>Seven planted leak cases and five safe controls exercise every shipped static rule, including targeted suppression. The corpus and runner live in <a href="https://github.com/ORANGINGS/nofuturedata/tree/main/benchmarks">benchmarks/</a> and run in CI on every push.</p>
+    </section>
+
+    <section style="margin-top:56px">
+      <h2>Use it in one workflow step</h2>
+      <pre><code>- uses: actions/checkout@v7
+- uses: ORANGINGS/nofuturedata@v0.2.2
+  with:
+    path: src</code></pre>
+      <p class="lede" style="margin:20px 0 0; text-align:left">Also available as a pre-commit hook, a Python API, a CLI, and SARIF output for GitHub Code Scanning.</p>
+    </section>
+
+    <footer>MIT licensed · deterministic · no runtime dependency · built for auditable time-aware ML and backtesting.</footer>
+  </div>
+</body>
+</html>

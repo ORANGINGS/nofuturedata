@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "nofuturedata"
-version = "0.2.1"
+version = "0.2.2"
 description = "Fail-closed temporal leakage checks for time-series, ML, and backtests."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "NoFutureData maintainers" }]
 keywords = [
   "data-leakage",
@@ -20,7 +21,6 @@ keywords = [
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -32,6 +32,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/ORANGINGS/nofuturedata"
+Documentation = "https://orangings.github.io/nofuturedata/"
 Issues = "https://github.com/ORANGINGS/nofuturedata/issues"
 
 [project.scripts]

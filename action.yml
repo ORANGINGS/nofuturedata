@@ -1,5 +1,8 @@
-name: "NoFutureData temporal leakage scan"
-description: "Fail CI when Python source contains common future-looking data patterns."
+name: "NoFutureData Temporal Leakage Guard"
+description: "Fail CI when Python or Jupyter code reads information from the future."
+branding:
+  icon: "shield"
+  color: "purple"
 inputs:
   path:
     description: "File or directory to scan (Python and Jupyter notebooks)"
