@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a false positive, false negative, crash, or incorrect temporal check.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: reproducer
+    attributes:
+      label: Minimal reproducer
+      description: Use synthetic/public data and remove credentials or private code.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: Explain what information was actually available at the historical decision time.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: NoFutureData version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: 3.12
+    validations:
+      required: true
+

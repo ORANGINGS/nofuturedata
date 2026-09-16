@@ -1,0 +1,25 @@
+name: Leakage rule proposal
+description: Propose a general temporal-leakage check backed by a concrete example.
+title: "[rule] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: failure
+    attributes:
+      label: Failure mode
+      description: Show how a pipeline can consume information that was unavailable at decision time.
+    validations:
+      required: true
+  - type: textarea
+    id: safe
+    attributes:
+      label: Safe counter-example
+      description: Show a similar valid pattern that the proposed rule should not reject.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Why this belongs in the provider-agnostic core
+    validations:
+      required: true
