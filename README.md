@@ -4,6 +4,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/ORANGINGS/nofuturedata)](https://github.com/ORANGINGS/nofuturedata/releases)
+[![GitHub downloads](https://img.shields.io/github/downloads/ORANGINGS/nofuturedata/total)](https://github.com/ORANGINGS/nofuturedata/releases)
 
 **Fail-closed temporal leakage checks for time-series, ML, forecasting, and backtests.**
 
@@ -40,7 +41,14 @@ decision that consumes it.
 
 ## Install
 
-From a checkout:
+Install the signed-off release wheel directly from GitHub:
+
+```bash
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.0/nofuturedata-0.2.0-py3-none-any.whl
+```
+
+The release also includes `SHA256SUMS.txt`. For editable development from a
+checkout:
 
 ```bash
 python -m pip install -e .
@@ -48,6 +56,10 @@ python -m pip install -e .
 
 The package requires Python 3.10+ and has no runtime dependency outside the
 standard library.
+
+PyPI publishing is prepared through GitHub OIDC Trusted Publishing. It will be
+enabled after the one-time PyPI project/publisher binding is completed; until
+then the GitHub release wheel above is the canonical install artifact.
 
 ## 1. Audit timestamp causality
 
