@@ -1,3 +1,9 @@
+---
+layout: default
+title: NoFutureData rule reference
+permalink: /RULES.html
+---
+
 # Rule reference
 
 NoFutureData separates three kinds of evidence: availability-time contracts,

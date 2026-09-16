@@ -1,3 +1,9 @@
+---
+layout: default
+title: Why temporal leakage deserves a CI guard
+permalink: /WHY.html
+---
+
 # Why temporal leakage deserves a CI guard
 
 Temporal leakage is not limited to trading. It appears whenever a historical

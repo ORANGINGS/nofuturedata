@@ -1,0 +1,5 @@
+title: NoFutureData
+description: Zero-dependency temporal data-leakage linter and point-in-time guard for Python and Jupyter.
+theme: jekyll-theme-primer
+url: https://orangings.github.io
+baseurl: /nofuturedata

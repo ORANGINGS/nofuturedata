@@ -1,3 +1,9 @@
+---
+layout: default
+title: PyPI publishing
+permalink: /PYPI_PUBLISHING.html
+---
+
 # PyPI publishing
 
 NoFutureData uses PyPI Trusted Publishing so the repository does not need a

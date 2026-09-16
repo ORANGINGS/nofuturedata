@@ -6,6 +6,7 @@ All notable changes to NoFutureData are documented here.
 
 - Add an evidence-backed ecosystem-importance note explaining the cross-domain
   temporal leakage problem and how NoFutureData complements framework-specific tools.
+- Render documentation pages as HTML on GitHub Pages and publish a sitemap/robots file.
 
 ## 0.2.3 - 2026-09-16
 

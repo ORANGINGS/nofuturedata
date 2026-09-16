@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://orangings.github.io/nofuturedata/sitemap.xml
