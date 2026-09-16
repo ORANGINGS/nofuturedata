@@ -183,16 +183,28 @@ def as_of(
     boundary = _aware_datetime(cutoff, field_name="cutoff")
     result: list[dict[str, Any]] = []
     for index, record in enumerate(records):
-        raw = record.get(availability)
+        primary_raw = record.get(availability)
+        fallback_raw = record.get(fallback)
+        raw = primary_raw
         field_name = availability
         if raw in (None, ""):
-            raw = record.get(fallback)
+            raw = fallback_raw
             field_name = fallback
         if raw in (None, ""):
             raise ValueError(
                 f"row {index} has neither {availability!r} nor {fallback!r}"
             )
         available = _aware_datetime(raw, field_name=field_name)
+        if (
+            primary_raw not in (None, "")
+            and fallback_raw not in (None, "")
+            and availability != fallback
+        ):
+            known = _aware_datetime(fallback_raw, field_name=fallback)
+            if available < known:
+                raise ValueError(
+                    f"row {index} has {availability!r} before {fallback!r}"
+                )
         if available <= boundary:
             result.append(dict(record))
     return result
@@ -346,6 +358,9 @@ def audit_notebook_source(source: str, *, filename: str = "<memory>.ipynb") -> A
             continue
         raw_source = cell.get("source", "")
         cell_source = "".join(raw_source) if isinstance(raw_source, list) else str(raw_source)
+        cell_source = _normalize_notebook_python(cell_source)
+        if cell_source is None:
+            continue
         report = audit_python_source(
             cell_source,
             filename=f"{filename}#cell-{cell_index + 1}",
@@ -360,6 +375,37 @@ def audit_notebook_source(source: str, *, filename: str = "<memory>.ipynb") -> A
             )
         combined.extend(report)
     return combined
+
+
+def _normalize_notebook_python(source: str) -> str | None:
+    """Return parseable Python while preserving notebook cell line numbers.
+
+    IPython line magics and shell escapes are replaced with blank lines. Common
+    Python-executing cell magics keep their body; non-Python cell magics are
+    skipped because parsing shell/SQL/R/etc. as Python would create false
+    configuration failures.
+    """
+
+    lines = source.splitlines(keepends=True)
+    first_content: int | None = None
+    for index, line in enumerate(lines):
+        if line.strip():
+            first_content = index
+            break
+
+    if first_content is not None:
+        stripped = lines[first_content].lstrip()
+        if stripped.startswith("%%"):
+            magic = stripped[2:].split(None, 1)[0].lower() if stripped[2:].strip() else ""
+            if magic not in {"time", "timeit", "capture"}:
+                return None
+            lines[first_content] = "\n" if lines[first_content].endswith("\n") else ""
+
+    for index, line in enumerate(lines):
+        stripped = line.lstrip()
+        if stripped.startswith("%") or stripped.startswith("!") or stripped.startswith("?"):
+            lines[index] = "\n" if line.endswith("\n") else ""
+    return "".join(lines)
 
 
 def _default_cut_points(length: int) -> list[int]:

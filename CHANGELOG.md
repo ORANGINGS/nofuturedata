@@ -4,9 +4,14 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+## 0.2.1 - 2026-09-16
+
 - Add a tokenless, manually gated PyPI Trusted Publishing workflow.
 - Add a stable rule reference.
 - Add weekly Dependabot maintenance for GitHub Actions and Python build tooling.
+- Make source scanning fail closed on missing paths or an entirely empty scan.
+- Make `as_of()` reject an `eligible_from` timestamp that precedes `known_at`.
+- Normalize common IPython magics in notebooks and skip non-Python cell magics.
 
 ## 0.2.0 - 2026-09-16
 

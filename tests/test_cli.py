@@ -41,6 +41,15 @@ class CliTests(unittest.TestCase):
             self.assertEqual(payload["version"], "2.1.0")
             self.assertEqual(payload["runs"][0]["results"][0]["ruleId"], "SRC002")
 
+    def test_scan_missing_path_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            missing = Path(folder) / "missing"
+            self.assertEqual(main(["scan", str(missing)]), 1)
+
+    def test_scan_empty_directory_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            self.assertEqual(main(["scan", folder]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

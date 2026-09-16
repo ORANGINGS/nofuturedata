@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nofuturedata"
-version = "0.2.0"
+version = "0.2.1"
 description = "Fail-closed temporal leakage checks for time-series, ML, and backtests."
 readme = "README.md"
 requires-python = ">=3.10"

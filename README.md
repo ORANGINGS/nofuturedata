@@ -6,7 +6,8 @@
 [![GitHub release](https://img.shields.io/github/v/release/ORANGINGS/nofuturedata)](https://github.com/ORANGINGS/nofuturedata/releases)
 [![GitHub downloads](https://img.shields.io/github/downloads/ORANGINGS/nofuturedata/total)](https://github.com/ORANGINGS/nofuturedata/releases)
 
-**Fail-closed temporal leakage checks for time-series, ML, forecasting, and backtests.**
+**Zero-dependency temporal data-leakage linter and point-in-time guard for
+Python/Jupyter time-series, ML, forecasting, and backtests.**
 
 Most leakage tools ask whether train and test rows overlap. NoFutureData asks a
 more operational question:
@@ -20,6 +21,12 @@ mutating future inputs and verifying that past outputs do not change.
 
 NoFutureData is local, deterministic, and has no runtime dependency or network
 service.
+
+Use it three ways without adopting a backtesting framework:
+
+- `nofuture scan` in CI/pre-commit for Python and Jupyter source review;
+- `audit_availability` / `as_of` for explicit point-in-time data contracts;
+- prefix and future-mutation invariance checks for custom feature pipelines.
 
 ## Why this exists
 
@@ -44,7 +51,7 @@ decision that consumes it.
 Install the signed-off release wheel directly from GitHub:
 
 ```bash
-python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.0/nofuturedata-0.2.0-py3-none-any.whl
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.1/nofuturedata-0.2.1-py3-none-any.whl
 ```
 
 The release also includes `SHA256SUMS.txt`. For editable development from a
@@ -115,10 +122,13 @@ pre-commit's filename passing:
 nofuture scan src tests notebooks
 ```
 
+Missing paths and an entirely empty scan fail closed instead of returning a
+misleading PASS.
+
 Python code cells inside `.ipynb` files are scanned too. Findings report the
 notebook cell number; markdown and non-Python notebooks are ignored.
 
-Version 0.1 flags:
+Current static rules flag:
 
 - negative `shift(...)`, such as `shift(-1)`;
 - `bfill()` / `backfill()`;
@@ -192,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ORANGINGS/nofuturedata@v0.2.0
+      - uses: ORANGINGS/nofuturedata@v0.2.1
         with:
           path: src
 ```
@@ -207,7 +217,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: ORANGINGS/nofuturedata@v0.2.0
+  - uses: ORANGINGS/nofuturedata@v0.2.1
     with:
       path: .
       sarif: nofuturedata.sarif
@@ -219,7 +229,7 @@ steps:
 ```yaml
 repos:
   - repo: https://github.com/ORANGINGS/nofuturedata
-    rev: v0.2.0
+    rev: v0.2.1
     hooks:
       - id: nofuturedata
 ```

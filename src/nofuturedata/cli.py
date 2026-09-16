@@ -10,6 +10,7 @@ from typing import Sequence
 
 from .audit import (
     AuditReport,
+    Finding,
     audit_availability,
     audit_notebook_source,
     audit_python_source,
@@ -41,12 +42,24 @@ def _print_report(report: AuditReport, *, as_json: bool) -> None:
 def _scan(paths: Sequence[Path]) -> AuditReport:
     combined = AuditReport()
     seen: set[Path] = set()
+    matched_files = 0
     for path in paths:
+        if not path.exists():
+            combined.findings.append(
+                Finding(
+                    "CFG001",
+                    "error",
+                    "scan path does not exist",
+                    details={"path": str(path)},
+                )
+            )
+            continue
         for file_path in iter_source_files(path):
             resolved = file_path.resolve()
             if resolved in seen:
                 continue
             seen.add(resolved)
+            matched_files += 1
             text = file_path.read_text(encoding="utf-8")
             if file_path.suffix.lower() == ".ipynb":
                 report = audit_notebook_source(text, filename=str(file_path))
@@ -56,6 +69,15 @@ def _scan(paths: Sequence[Path]) -> AuditReport:
                     finding.details["path"] = str(file_path)
                     finding.details["source_kind"] = "python"
             combined.extend(report)
+    if matched_files == 0 and not combined.findings:
+        combined.findings.append(
+            Finding(
+                "CFG002",
+                "error",
+                "no Python or Jupyter source files found",
+                details={"path": ", ".join(str(path) for path in paths)},
+            )
+        )
     return combined
 
 

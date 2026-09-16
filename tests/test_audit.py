@@ -48,6 +48,17 @@ class AvailabilityTests(unittest.TestCase):
         result = as_of(rows, "2026-09-16T09:30:00+00:00")
         self.assertEqual([row["id"] for row in result], [1])
 
+    def test_as_of_rejects_eligibility_before_known_at(self) -> None:
+        rows = [
+            {
+                "id": 1,
+                "known_at": "2026-09-16T10:00:00+00:00",
+                "eligible_from": "2026-09-16T09:59:59+00:00",
+            }
+        ]
+        with self.assertRaisesRegex(ValueError, "before 'known_at'"):
+            as_of(rows, "2026-09-16T11:00:00+00:00")
+
 
 class StaticScanTests(unittest.TestCase):
     def test_flags_common_future_looking_pandas_patterns(self) -> None:
@@ -92,6 +103,34 @@ def features(df):
         self.assertEqual(report.findings[0].code, "SRC001")
         self.assertEqual(report.findings[0].details["cell"], 2)
         self.assertEqual(report.findings[0].details["path"], "demo.ipynb")
+
+    def test_notebook_ipython_magics_do_not_break_python_scan(self) -> None:
+        notebook = {
+            "metadata": {"kernelspec": {"language": "python"}},
+            "cells": [
+                {
+                    "cell_type": "code",
+                    "source": [
+                        "%matplotlib inline\n",
+                        "!echo setup\n",
+                        "x = df.x.shift(-1)\n",
+                    ],
+                },
+                {
+                    "cell_type": "code",
+                    "source": ["%%time\n", "safe = df.x.shift(1)\n"],
+                },
+                {
+                    "cell_type": "code",
+                    "source": ["%%bash\n", "echo shift(-1)\n"],
+                },
+            ],
+        }
+        report = audit_notebook_source(json.dumps(notebook), filename="magics.ipynb")
+        self.assertFalse(report.ok)
+        self.assertEqual([item.code for item in report.findings], ["SRC001"])
+        self.assertEqual(report.findings[0].line, 3)
+        self.assertEqual(report.findings[0].details["cell"], 1)
 
     def test_sarif_contains_rule_and_location(self) -> None:
         report = audit_python_source("x = df.x.shift(-1)\n", filename="feature.py")

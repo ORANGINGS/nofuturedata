@@ -29,6 +29,16 @@ to the consumer, not event chronology alone.
 | `SRC003` | `rolling(..., center=True)` | centered windows can include future rows |
 | `SRC004` | `merge_asof(..., direction="forward"|"nearest")` | may match a row that was not yet available |
 
+## Scan configuration rules
+
+| Code | Meaning |
+| --- | --- |
+| `CFG001` | a requested scan path does not exist |
+| `CFG002` | none of the requested paths contains a Python or Jupyter source file |
+
+These configuration failures are errors so a typo such as `nofuture scan scr/`
+cannot silently turn a CI gate green.
+
 These patterns can be legitimate in label construction or retrospective
 analysis. Suppress an intentional use on the exact line:
 
@@ -39,6 +49,11 @@ label = close.shift(-1) > close  # nofuture: ignore[SRC001]
 Use `# nofuture: ignore` only when every NoFutureData finding on that line is
 intentional. Rule-specific suppressions are preferred because they survive new
 rules more safely.
+
+For Jupyter notebooks, IPython line magics (`%...`), shell escapes (`!...`),
+and Python-executing cell magics such as `%%time` are normalized before AST
+analysis while preserving cell-local line numbers. Non-Python cell magics such
+as `%%bash` are skipped.
 
 ## Runtime invariance rules
 
