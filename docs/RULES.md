@@ -25,6 +25,19 @@ NoFutureData does not require `event_time <= known_at`. A future scheduled event
 can legitimately be known before it happens. The causal boundary is availability
 to the consumer, not event chronology alone.
 
+## Point-in-time join contract
+
+`point_in_time_join()` is an optional pandas helper for revision/vintage data.
+It always performs a backward as-of match from each decision timestamp to the
+latest eligible right-side row. `eligible_from` is preferred when present and
+falls back to `known_at` for rows without an explicit eligibility timestamp.
+
+The helper fails closed on timezone-naive timestamps, `eligible_from < known_at`,
+missing exact-match `by` keys, and duplicate right-side rows with the same `by`
+keys and availability timestamp. The duplicate rule is deliberate: revision
+selection must not depend on dataframe row order. pandas remains an optional
+extra and is not imported until this helper is called.
+
 ## Static source rules
 
 | Code | Pattern | Why it is gated |

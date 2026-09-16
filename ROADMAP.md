@@ -10,13 +10,17 @@ The project will prioritize evidence of real user pain over feature count.
 - Public planted-leak corpus with safe controls and CI verification.
 - GitHub Pages landing page and Marketplace-ready Action metadata.
 
+## Shipped in 0.3
+
+- Point-in-time joins for pandas with explicit availability columns.
+
 ## Next
 
-- Point-in-time joins for pandas and Polars with explicit availability columns.
+- Point-in-time joins for Polars with explicit availability columns.
 - Purging and embargo helpers for overlapping labels.
 - Property-based fixtures for revision/vintage data.
 
-## 0.3
+## Later
 
 - Reusable CI policy file for repository-wide temporal contracts.
 - Dataset manifest checks for `known_at`, `eligible_from`, timezone, and revision semantics.

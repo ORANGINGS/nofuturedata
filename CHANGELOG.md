@@ -4,6 +4,11 @@ All notable changes to NoFutureData are documented here.
 
 ## Unreleased
 
+## 0.3.0 - 2026-09-16
+
+- Add an optional pandas `point_in_time_join()` helper with backward-only as-of
+  semantics, timezone-aware decision/availability validation, fail-closed
+  duplicate handling, and revision/vintage regression tests.
 - Add an evidence-backed ecosystem-importance note explaining the cross-domain
   temporal leakage problem and how NoFutureData complements framework-specific tools.
 - Render documentation pages as HTML on GitHub Pages and publish a sitemap/robots file.

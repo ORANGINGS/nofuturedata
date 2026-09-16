@@ -34,7 +34,7 @@
   <div class="wrap">
     <header>
       <h1>NoFutureData</h1>
-      <p class="lede">A zero-dependency temporal leakage guard for Python and Jupyter. Make the historical information boundary executable in CI.</p>
+      <p class="lede">A zero-mandatory-dependency temporal leakage guard for Python and Jupyter. Make the historical information boundary executable in CI.</p>
       <div class="buttons">
         <a class="button primary" href="https://github.com/ORANGINGS/nofuturedata">View on GitHub</a>
         <a class="button" href="https://github.com/ORANGINGS/nofuturedata/releases/latest">Latest release</a>
@@ -44,7 +44,7 @@
     </header>
 
     <section class="grid">
-      <div class="card"><h2>Point-in-time</h2><p>Separate event time from <code>known_at</code> and <code>eligible_from</code>, then fail closed when a historical decision sees unavailable data.</p></div>
+      <div class="card"><h2>Point-in-time</h2><p>Separate event time from <code>known_at</code> and <code>eligible_from</code>, then use the optional pandas helper to join only vintages that were actually available.</p></div>
       <div class="card"><h2>Static guard</h2><p>Scan Python and Jupyter for negative shifts, backfills, centered windows, and forward/nearest as-of joins.</p></div>
       <div class="card"><h2>Runtime proof</h2><p>Mutate or delete only future rows and verify that already-produced historical outputs stay invariant.</p></div>
     </section>
@@ -79,13 +79,13 @@ FAIL: 2 finding(s)
     <section style="margin-top:56px">
       <h2>Use it in one workflow step</h2>
       <pre><code>- uses: actions/checkout@v7
-- uses: ORANGINGS/nofuturedata@v0.2.3
+- uses: ORANGINGS/nofuturedata@v0.3.0
   with:
     path: src</code></pre>
       <p class="lede" style="margin:20px 0 0; text-align:left">Also available as a pre-commit hook, a Python API, a CLI, and SARIF output for GitHub Code Scanning.</p>
     </section>
 
-    <footer>MIT licensed · deterministic · no runtime dependency · built for auditable time-aware ML and backtesting.</footer>
+    <footer>MIT licensed · deterministic · zero mandatory runtime dependencies · built for auditable time-aware ML and backtesting.</footer>
   </div>
 </body>
 </html>

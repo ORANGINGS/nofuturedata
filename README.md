@@ -7,7 +7,7 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/ORANGINGS/nofuturedata/total)](https://github.com/ORANGINGS/nofuturedata/releases)
 [![Project site](https://img.shields.io/badge/site-NoFutureData-9b7cff)](https://orangings.github.io/nofuturedata/)
 
-**Zero-dependency temporal data-leakage linter and point-in-time guard for
+**Zero-mandatory-dependency temporal data-leakage linter and point-in-time guard for
 Python/Jupyter time-series, ML, forecasting, and backtests.**
 
 Most leakage tools ask whether train and test rows overlap. NoFutureData asks a
@@ -20,8 +20,8 @@ It separates event time from availability time, statically flags common
 future-looking pandas patterns, and can test a feature pipeline by deleting or
 mutating future inputs and verifying that past outputs do not change.
 
-NoFutureData is local, deterministic, and has no runtime dependency or network
-service.
+NoFutureData is local and deterministic. The core has no mandatory runtime
+dependency or network service; the dataframe join helper uses optional pandas.
 
 Use it three ways without adopting a backtesting framework:
 
@@ -52,7 +52,7 @@ decision that consumes it.
 Install the signed-off release wheel directly from GitHub:
 
 ```bash
-python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.2.3/nofuturedata-0.2.3-py3-none-any.whl
+python -m pip install https://github.com/ORANGINGS/nofuturedata/releases/download/v0.3.0/nofuturedata-0.3.0-py3-none-any.whl
 ```
 
 The release also includes `SHA256SUMS.txt`. For editable development from a
@@ -62,8 +62,9 @@ checkout:
 python -m pip install -e .
 ```
 
-The package requires Python 3.10+ and has no runtime dependency outside the
-standard library.
+The package requires Python 3.10+. The core has no runtime dependency outside
+the standard library. For the pandas join helper, install pandas 2.1+ alongside
+the release wheel, or use `python -m pip install -e ".[pandas]"` from a checkout.
 
 PyPI publishing is prepared through GitHub OIDC Trusted Publishing. It will be
 enabled after the one-time PyPI project/publisher binding is completed; until
@@ -110,7 +111,26 @@ visible = as_of(records, "2026-09-16T09:30:00+00:00")
 present, the query raises instead of silently treating today's data as
 historically available.
 
-## 3. Scan Python and Jupyter source
+## 3. Point-in-time join revised data with pandas
+
+```python
+from nofuturedata import point_in_time_join
+
+joined = point_in_time_join(
+    decisions,
+    vintages,
+    decision_time="decision_time",
+    by=["series", "event_time"],
+)
+```
+
+The helper always uses backward/as-of semantics: a vintage cannot match a
+decision made before that vintage's `eligible_from` (or `known_at` fallback).
+All timestamps must carry a timezone. Duplicate right rows with the same `by`
+keys and availability timestamp fail closed instead of letting dataframe row
+order silently choose a revision.
+
+## 4. Scan Python and Jupyter source
 
 ```bash
 nofuture scan src/
@@ -163,7 +183,7 @@ For GitHub Code Scanning or another SARIF consumer:
 nofuture scan src notebooks --sarif nofuturedata.sarif
 ```
 
-## 4. Test the pipeline, not only the syntax
+## 5. Test the pipeline, not only the syntax
 
 Static scanning cannot catch arbitrary code. Runtime invariance checks can.
 
@@ -217,7 +237,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: ORANGINGS/nofuturedata@v0.2.3
+      - uses: ORANGINGS/nofuturedata@v0.3.0
         with:
           path: src
 ```
@@ -232,7 +252,7 @@ permissions:
 
 steps:
   - uses: actions/checkout@v7
-  - uses: ORANGINGS/nofuturedata@v0.2.3
+  - uses: ORANGINGS/nofuturedata@v0.3.0
     with:
       path: .
       sarif: nofuturedata.sarif
@@ -244,7 +264,7 @@ steps:
 ```yaml
 repos:
   - repo: https://github.com/ORANGINGS/nofuturedata
-    rev: v0.2.3
+    rev: v0.3.0
     hooks:
       - id: nofuturedata
 ```

@@ -3,12 +3,15 @@ from __future__ import annotations
 import json
 import unittest
 
+import pandas as pd
+
 from nofuturedata import (
     as_of,
     audit_availability,
     audit_notebook_source,
     audit_python_source,
     future_mutation_invariance,
+    point_in_time_join,
     prefix_invariance,
     report_to_sarif,
 )
@@ -58,6 +61,132 @@ class AvailabilityTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ValueError, "before 'known_at'"):
             as_of(rows, "2026-09-16T11:00:00+00:00")
+
+
+class PointInTimeJoinTests(unittest.TestCase):
+    def test_revised_vintage_is_visible_only_after_it_is_known(self) -> None:
+        left = pd.DataFrame(
+            {
+                "series": ["CPI", "CPI"],
+                "event_time": ["2026-01-01", "2026-01-01"],
+                "decision_time": [
+                    "2026-02-15T12:00:00+00:00",
+                    "2026-03-15T12:00:00+00:00",
+                ],
+            }
+        )
+        right = pd.DataFrame(
+            {
+                "series": ["CPI", "CPI"],
+                "event_time": ["2026-01-01", "2026-01-01"],
+                "known_at": [
+                    "2026-02-01T08:30:00+00:00",
+                    "2026-03-01T08:30:00+00:00",
+                ],
+                "value": [100.0, 101.0],
+            }
+        )
+
+        joined = point_in_time_join(
+            left,
+            right,
+            decision_time="decision_time",
+            by=["series", "event_time"],
+        )
+
+        self.assertEqual(joined["value"].tolist(), [100.0, 101.0])
+
+    def test_planted_future_row_is_not_joined(self) -> None:
+        left = pd.DataFrame(
+            {
+                "series": ["CPI"],
+                "decision_time": ["2026-02-15T12:00:00+00:00"],
+            }
+        )
+        right = pd.DataFrame(
+            {
+                "series": ["CPI"],
+                "known_at": ["2026-03-01T08:30:00+00:00"],
+                "value": [999.0],
+            }
+        )
+
+        joined = point_in_time_join(
+            left,
+            right,
+            decision_time="decision_time",
+            by="series",
+        )
+
+        self.assertTrue(pd.isna(joined.loc[0, "value"]))
+
+    def test_eligible_from_delays_a_known_row(self) -> None:
+        left = pd.DataFrame(
+            {
+                "decision_time": [
+                    "2026-02-01T08:31:00+00:00",
+                    "2026-02-01T08:36:00+00:00",
+                ]
+            }
+        )
+        right = pd.DataFrame(
+            {
+                "known_at": ["2026-02-01T08:30:00+00:00"],
+                "eligible_from": ["2026-02-01T08:35:00+00:00"],
+                "value": [100.0],
+            }
+        )
+
+        joined = point_in_time_join(left, right, decision_time="decision_time")
+
+        self.assertTrue(pd.isna(joined.loc[0, "value"]))
+        self.assertEqual(joined.loc[1, "value"], 100.0)
+
+    def test_naive_timestamp_fails_closed(self) -> None:
+        left = pd.DataFrame({"decision_time": ["2026-02-01 08:31:00"]})
+        right = pd.DataFrame(
+            {"known_at": ["2026-02-01T08:30:00+00:00"], "value": [1]}
+        )
+        with self.assertRaisesRegex(ValueError, "timezone offset"):
+            point_in_time_join(left, right, decision_time="decision_time")
+
+    def test_eligibility_before_known_at_fails_closed(self) -> None:
+        left = pd.DataFrame(
+            {"decision_time": ["2026-02-01T09:00:00+00:00"]}
+        )
+        right = pd.DataFrame(
+            {
+                "known_at": ["2026-02-01T08:30:00+00:00"],
+                "eligible_from": ["2026-02-01T08:29:59+00:00"],
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "before 'known_at'"):
+            point_in_time_join(left, right, decision_time="decision_time")
+
+    def test_ambiguous_duplicate_right_keys_fail_closed(self) -> None:
+        left = pd.DataFrame(
+            {
+                "series": ["CPI"],
+                "decision_time": ["2026-02-01T09:00:00+00:00"],
+            }
+        )
+        right = pd.DataFrame(
+            {
+                "series": ["CPI", "CPI"],
+                "known_at": [
+                    "2026-02-01T08:30:00+00:00",
+                    "2026-02-01T08:30:00+00:00",
+                ],
+                "value": [1, 2],
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "ambiguous duplicate"):
+            point_in_time_join(
+                left,
+                right,
+                decision_time="decision_time",
+                by="series",
+            )
 
 
 class StaticScanTests(unittest.TestCase):
