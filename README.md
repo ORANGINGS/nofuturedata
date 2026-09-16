@@ -3,6 +3,7 @@
 [![CI](https://github.com/ORANGINGS/nofuturedata/actions/workflows/ci.yml/badge.svg)](https://github.com/ORANGINGS/nofuturedata/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/ORANGINGS/nofuturedata)](https://github.com/ORANGINGS/nofuturedata/releases)
 
 **Fail-closed temporal leakage checks for time-series, ML, forecasting, and backtests.**
 
@@ -89,11 +90,21 @@ visible = as_of(records, "2026-09-16T09:30:00+00:00")
 present, the query raises instead of silently treating today's data as
 historically available.
 
-## 3. Scan source code
+## 3. Scan Python and Jupyter source
 
 ```bash
 nofuture scan src/
 ```
+
+Multiple paths are accepted, so the same command works naturally with
+pre-commit's filename passing:
+
+```bash
+nofuture scan src tests notebooks
+```
+
+Python code cells inside `.ipynb` files are scanned too. Findings report the
+notebook cell number; markdown and non-Python notebooks are ignored.
 
 Version 0.1 flags:
 
@@ -106,11 +117,27 @@ These are review gates, not proofs of a bug. Some pipelines use these operations
 legitimately when building labels. The point is to force the temporal assumption
 to be explicit.
 
+When a future-looking operation is intentional, suppress the exact rule on that
+line so reviewers can see the exception in source control:
+
+```python
+label = price.shift(-1) > price  # nofuture: ignore[SRC001]
+```
+
+`# nofuture: ignore` suppresses all NoFutureData findings on that line. Prefer
+the rule-specific form when possible.
+
 Example:
 
 ```text
 FAIL: 1 finding(s), 5 row/line(s) scanned
 [SRC001] negative shift can read future rows (line 5)
+```
+
+For GitHub Code Scanning or another SARIF consumer:
+
+```bash
+nofuture scan src notebooks --sarif nofuturedata.sarif
 ```
 
 ## 4. Test the pipeline, not only the syntax
@@ -142,8 +169,7 @@ This catches classes of leakage that simple source scanning misses.
 
 ## GitHub Action
 
-After the repository has a stable public release, downstream projects can put a
-source scan in CI:
+Downstream projects can put a source scan in CI:
 
 ```yaml
 name: temporal-leakage
@@ -154,10 +180,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ORANGINGS/nofuturedata@v0.1.0
+      - uses: ORANGINGS/nofuturedata@v0.2.0
         with:
           path: src
 ```
+
+To publish findings in GitHub Code Scanning, grant `security-events: write` and
+turn on SARIF upload:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+
+steps:
+  - uses: actions/checkout@v4
+  - uses: ORANGINGS/nofuturedata@v0.2.0
+    with:
+      path: .
+      sarif: nofuturedata.sarif
+      upload-sarif: "true"
+```
+
+## Pre-commit
+
+```yaml
+repos:
+  - repo: https://github.com/ORANGINGS/nofuturedata
+    rev: v0.2.0
+    hooks:
+      - id: nofuturedata
+```
+
+Then run `pre-commit run --all-files`. The hook receives changed `.py` and
+`.ipynb` files directly and fails closed when it finds a temporal leakage gate.
 
 ## What NoFutureData is not
 

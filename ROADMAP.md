@@ -2,9 +2,14 @@
 
 The project will prioritize evidence of real user pain over feature count.
 
-## 0.2
+## Shipped in 0.2
 
 - SARIF output for GitHub code scanning.
+- Jupyter notebook scanning.
+- Pre-commit integration.
+
+## Next
+
 - Point-in-time joins for pandas and Polars with explicit availability columns.
 - Purging and embargo helpers for overlapping labels.
 - Property-based fixtures for revision/vintage data.
@@ -21,4 +26,3 @@ The project will prioritize evidence of real user pain over feature count.
 - Issue and PR turnaround time.
 - False-positive examples and rule changes driven by user reports.
 - Tagged releases and compatibility matrix.
-

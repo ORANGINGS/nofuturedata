@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -198,10 +199,26 @@ def as_of(
 
 
 class _LeakVisitor(ast.NodeVisitor):
-    def __init__(self) -> None:
+    def __init__(self, source: str) -> None:
         self.findings: list[Finding] = []
+        self.lines = source.splitlines()
+
+    def _suppressed(self, node: ast.AST, code: str) -> bool:
+        line_number = getattr(node, "lineno", None)
+        if line_number is None or not (1 <= line_number <= len(self.lines)):
+            return False
+        line = self.lines[line_number - 1]
+        generic = "nofuture: ignore"
+        targeted = f"nofuture: ignore[{code}]"
+        if targeted in line:
+            return True
+        # A bare ignore intentionally suppresses every finding emitted on that
+        # source line; a targeted ignore suppresses only its rule.
+        return generic in line and "nofuture: ignore[" not in line
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
+        if self._suppressed(node, code):
+            return
         self.findings.append(
             Finding(
                 code,
@@ -283,12 +300,66 @@ def audit_python_source(source: str, *, filename: str = "<memory>") -> AuditRepo
             ],
             rows_scanned=len(source.splitlines()),
         )
-    visitor = _LeakVisitor()
+    visitor = _LeakVisitor(source)
     visitor.visit(tree)
     return AuditReport(
         findings=visitor.findings,
         rows_scanned=len(source.splitlines()),
     )
+
+
+def audit_notebook_source(source: str, *, filename: str = "<memory>.ipynb") -> AuditReport:
+    """Scan Python code cells in a Jupyter notebook.
+
+    Notebook findings keep the cell-local line number and add ``cell`` and
+    ``path`` metadata so CLI/SARIF consumers can point back to the source.
+    Non-Python notebooks are ignored rather than parsed as Python.
+    """
+
+    try:
+        notebook = json.loads(source)
+    except json.JSONDecodeError as exc:
+        return AuditReport(
+            findings=[
+                Finding(
+                    "SRC000",
+                    "error",
+                    f"cannot parse Jupyter notebook JSON: {exc.msg}",
+                    line=exc.lineno,
+                    details={"path": filename, "source_kind": "notebook"},
+                )
+            ],
+            rows_scanned=len(source.splitlines()),
+        )
+
+    language = (
+        notebook.get("metadata", {})
+        .get("kernelspec", {})
+        .get("language", "python")
+    )
+    if str(language).lower() not in {"python", "python3"}:
+        return AuditReport()
+
+    combined = AuditReport()
+    for cell_index, cell in enumerate(notebook.get("cells", [])):
+        if cell.get("cell_type") != "code":
+            continue
+        raw_source = cell.get("source", "")
+        cell_source = "".join(raw_source) if isinstance(raw_source, list) else str(raw_source)
+        report = audit_python_source(
+            cell_source,
+            filename=f"{filename}#cell-{cell_index + 1}",
+        )
+        for finding in report.findings:
+            finding.details.update(
+                {
+                    "path": filename,
+                    "cell": cell_index + 1,
+                    "source_kind": "notebook",
+                }
+            )
+        combined.extend(report)
+    return combined
 
 
 def _default_cut_points(length: int) -> list[int]:
@@ -373,12 +444,66 @@ def future_mutation_invariance(
     return report
 
 
-def iter_python_files(path: Path) -> Iterable[Path]:
+def iter_source_files(path: Path) -> Iterable[Path]:
     if path.is_file():
-        if path.suffix == ".py":
+        if path.suffix.lower() in {".py", ".ipynb"}:
             yield path
         return
     ignored = {".git", ".venv", "venv", "build", "dist", "__pycache__"}
-    for candidate in path.rglob("*.py"):
-        if not any(part in ignored for part in candidate.parts):
-            yield candidate
+    for pattern in ("*.py", "*.ipynb"):
+        for candidate in path.rglob(pattern):
+            if not any(part in ignored for part in candidate.parts):
+                yield candidate
+
+
+def report_to_sarif(report: AuditReport) -> dict[str, Any]:
+    """Convert findings to SARIF 2.1.0 for GitHub Code Scanning."""
+
+    rules: dict[str, dict[str, Any]] = {}
+    results: list[dict[str, Any]] = []
+    for finding in report.findings:
+        rules.setdefault(
+            finding.code,
+            {
+                "id": finding.code,
+                "shortDescription": {"text": finding.message},
+                "defaultConfiguration": {
+                    "level": "error" if finding.severity == "error" else "warning"
+                },
+            },
+        )
+        result: dict[str, Any] = {
+            "ruleId": finding.code,
+            "level": "error" if finding.severity == "error" else "warning",
+            "message": {"text": finding.message},
+        }
+        path = finding.details.get("path")
+        if path:
+            physical: dict[str, Any] = {
+                "artifactLocation": {"uri": str(path).replace("\\", "/")}
+            }
+            # A notebook finding's line is cell-local rather than a physical
+            # JSON line, so omit a misleading SARIF region for notebooks.
+            if finding.line is not None and finding.details.get("source_kind") != "notebook":
+                physical["region"] = {"startLine": max(1, finding.line)}
+            result["locations"] = [{"physicalLocation": physical}]
+        if finding.details.get("cell"):
+            result["message"]["text"] += f" (notebook cell {finding.details['cell']})"
+        results.append(result)
+
+    return {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "NoFutureData",
+                        "informationUri": "https://github.com/ORANGINGS/nofuturedata",
+                        "rules": list(rules.values()),
+                    }
+                },
+                "results": results,
+            }
+        ],
+    }

@@ -21,5 +21,13 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e . pytest
       - run: pytest
-      - run: nofuture scan src
-
+      - run: nofuture scan src tests examples/safe_pipeline.py --sarif nofuturedata.sarif
+      - name: pre-commit hook smoke test
+        if: matrix.python-version == '3.12'
+        run: |
+          python -m pip install pre-commit==4.3.0
+          pre-commit try-repo . nofuturedata --files examples/safe_pipeline.py
+      - name: action smoke test
+        uses: ./
+        with:
+          path: src

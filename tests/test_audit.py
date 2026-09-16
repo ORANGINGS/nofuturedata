@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 import unittest
 
 from nofuturedata import (
     as_of,
     audit_availability,
+    audit_notebook_source,
     audit_python_source,
     future_mutation_invariance,
     prefix_invariance,
+    report_to_sarif,
 )
 
 
@@ -67,6 +70,39 @@ def features(df):
     return df.x.shift(1).rolling(5).mean()
 """
         self.assertTrue(audit_python_source(source).ok)
+
+    def test_inline_suppression_can_be_targeted_or_generic(self) -> None:
+        targeted = "x = df.x.shift(-1)  # nofuture: ignore[SRC001]\n"
+        generic = "x = df.x.bfill()  # nofuture: ignore\n"
+        wrong_code = "x = df.x.shift(-1)  # nofuture: ignore[SRC002]\n"
+        self.assertTrue(audit_python_source(targeted).ok)
+        self.assertTrue(audit_python_source(generic).ok)
+        self.assertFalse(audit_python_source(wrong_code).ok)
+
+    def test_scans_python_notebook_cells(self) -> None:
+        notebook = {
+            "metadata": {"kernelspec": {"language": "python"}},
+            "cells": [
+                {"cell_type": "markdown", "source": ["# demo"]},
+                {"cell_type": "code", "source": ["x = df.x.shift(-1)\n"]},
+            ],
+        }
+        report = audit_notebook_source(json.dumps(notebook), filename="demo.ipynb")
+        self.assertFalse(report.ok)
+        self.assertEqual(report.findings[0].code, "SRC001")
+        self.assertEqual(report.findings[0].details["cell"], 2)
+        self.assertEqual(report.findings[0].details["path"], "demo.ipynb")
+
+    def test_sarif_contains_rule_and_location(self) -> None:
+        report = audit_python_source("x = df.x.shift(-1)\n", filename="feature.py")
+        report.findings[0].details["path"] = "feature.py"
+        sarif = report_to_sarif(report)
+        result = sarif["runs"][0]["results"][0]
+        self.assertEqual(result["ruleId"], "SRC001")
+        self.assertEqual(
+            result["locations"][0]["physicalLocation"]["artifactLocation"]["uri"],
+            "feature.py",
+        )
 
 
 class InvarianceTests(unittest.TestCase):

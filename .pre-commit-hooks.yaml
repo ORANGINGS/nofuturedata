@@ -1,0 +1,6 @@
+- id: nofuturedata
+  name: NoFutureData temporal leakage scan
+  description: Fail on suspicious future-looking Python/Jupyter patterns.
+  entry: nofuture scan
+  language: python
+  files: \.(py|ipynb)$
