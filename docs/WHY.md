@@ -34,16 +34,35 @@ remaining practical gap NoFutureData targets is a small, local guard that can be
 added to an ordinary Python/Jupyter repository without adopting a feature store,
 backtesting engine, or ML framework.
 
+## Where NoFutureData fits
+
+| Tool | Primary strength | Boundary NoFutureData complements |
+| --- | --- | --- |
+| scikit-learn `TimeSeriesSplit` | chronological train/test splits and an optional gap | does not encode when revised source data became known or eligible, and does not review arbitrary pipeline source |
+| Feast | point-in-time-correct historical feature retrieval inside a feature store | assumes the feature-store workflow rather than acting as a repository-wide source/data contract guard |
+| Freqtrade `lookahead-analysis` | behavioral lookahead detection for Freqtrade strategy backtests | is specific to Freqtrade strategies and their backtesting/data workflow |
+| NoFutureData | repository-local availability contracts, source review gates, point-in-time joins, and invariance checks | deliberately does not replace model evaluation, a feature store, or a domain-specific backtesting engine |
+
+References: scikit-learn documents why ordinary cross-validation is unsuitable
+for ordered observations and exposes a `gap` in `TimeSeriesSplit`:
+https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html
+Feast documents point-in-time-correct joins for historical feature retrieval:
+https://docs.feast.dev/getting-started/concepts/point-in-time-joins
+Freqtrade documents its strategy-specific `lookahead-analysis` workflow:
+https://docs.freqtrade.io/en/latest/lookahead-analysis/
+
 ## What NoFutureData makes executable
 
-NoFutureData deliberately combines three checks that are often handled
+NoFutureData deliberately combines four checks that are often handled
 separately:
 
 1. **Availability semantics** — distinguish when an event happened from when the
    information was actually known and eligible for use.
-2. **Source review gates** — flag common future-looking operations in Python and
+2. **Dataset temporal contracts** — make event-time, known-at, eligibility,
+   timezone, revision, and null-reason assumptions executable in CI.
+3. **Source review gates** — flag common future-looking operations in Python and
    Jupyter before they enter a pipeline.
-3. **Behavioral invariance** — remove or mutate only future inputs and verify that
+4. **Behavioral invariance** — remove or mutate only future inputs and verify that
    already-produced historical outputs do not change.
 
 The core has no runtime dependency and is exposed as a Python API, CLI,
