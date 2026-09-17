@@ -40,7 +40,7 @@ def _print_report(report: AuditReport, *, as_json: bool) -> None:
         print(f"[{item.code}] {item.message}{suffix}")
 
 
-def _scan(paths: Sequence[Path]) -> AuditReport:
+def _scan(paths: Sequence[Path], *, temporal_context: str | None = None) -> AuditReport:
     combined = AuditReport()
     seen: set[Path] = set()
     matched_files = 0
@@ -63,9 +63,17 @@ def _scan(paths: Sequence[Path]) -> AuditReport:
             matched_files += 1
             text = file_path.read_text(encoding="utf-8")
             if file_path.suffix.lower() == ".ipynb":
-                report = audit_notebook_source(text, filename=str(file_path))
+                report = audit_notebook_source(
+                    text,
+                    filename=str(file_path),
+                    temporal_context=temporal_context,
+                )
             else:
-                report = audit_python_source(text, filename=str(file_path))
+                report = audit_python_source(
+                    text,
+                    filename=str(file_path),
+                    temporal_context=temporal_context,
+                )
                 for finding in report.findings:
                     finding.details["path"] = str(file_path)
                     finding.details["source_kind"] = "python"
@@ -107,6 +115,11 @@ def build_parser() -> argparse.ArgumentParser:
     scan.add_argument("path", type=Path, nargs="+")
     scan.add_argument("--json", action="store_true")
     scan.add_argument(
+        "--time-series",
+        action="store_true",
+        help="enable context-dependent review gates for time-series evaluation code",
+    )
+    scan.add_argument(
         "--sarif",
         type=Path,
         default=None,
@@ -132,7 +145,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "scan":
-        report = _scan(args.path)
+        report = _scan(
+            args.path,
+            temporal_context="time_series" if args.time_series else None,
+        )
         if args.sarif is not None:
             args.sarif.parent.mkdir(parents=True, exist_ok=True)
             args.sarif.write_text(

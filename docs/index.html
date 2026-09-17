@@ -39,13 +39,15 @@
         <a class="button primary" href="https://github.com/ORANGINGS/nofuturedata">View on GitHub</a>
         <a class="button" href="https://github.com/ORANGINGS/nofuturedata/releases/latest">Latest release</a>
         <a class="button" href="WHY.html">Why this matters</a>
+        <a class="button" href="RESEARCH_BRIEF.html">Research brief</a>
+        <a class="button" href="EVALUATION.html">Evaluation</a>
         <a class="button" href="RULES.html">Rule reference</a>
       </div>
     </header>
 
     <section class="grid">
       <div class="card"><h2>Point-in-time</h2><p>Separate event time from <code>known_at</code> and <code>eligible_from</code>, then use the optional pandas helper to join only vintages that were actually available.</p></div>
-      <div class="card"><h2>Static guard</h2><p>Scan Python and Jupyter for negative shifts, backfills, centered windows, and forward/nearest as-of joins.</p></div>
+      <div class="card"><h2>Static guard</h2><p>Scan Python and Jupyter for negative shifts/diffs, backward fills/interpolation, centered windows, forward/nearest as-of joins, same-dataframe whole-series feature aggregates, and negative absolute <code>iloc</code>.</p></div>
       <div class="card"><h2>Runtime proof</h2><p>Mutate or delete only future rows and verify that already-produced historical outputs stay invariant.</p></div>
     </section>
 
@@ -72,9 +74,54 @@ FAIL: 2 finding(s)
 
     <section class="card">
       <h2>Public planted-leak corpus</h2>
-      <div class="bench"><span class="score">12/12</span><span class="good">reproducible cases pass</span></div>
-      <p>Seven planted leak cases and five safe controls exercise every shipped static rule, including targeted suppression. The corpus and runner live in <a href="https://github.com/ORANGINGS/nofuturedata/tree/main/benchmarks">benchmarks/</a> and run in CI on every push.</p>
+      <div class="bench"><span class="score">31/31</span><span class="good">reproducible cases pass</span></div>
+      <p>Eighteen planted leak cases and thirteen safe controls exercise every shipped semantic static rule (<code>SRC001+</code>), including the opt-in temporal-context rules and targeted suppression. The benchmark reports exact-case accuracy, finding precision/recall/F1, leak detection, specificity, and per-rule coverage. The corpus and runner live in <a href="https://github.com/ORANGINGS/nofuturedata/tree/main/benchmarks">benchmarks/</a> and run in CI on every push.</p>
     </section>
+
+    <section class="grid" style="margin-top:24px">
+      <div class="card">
+        <h2>Method ablation</h2>
+        <div class="bench"><span class="score">0.50 → 1.00</span><span class="good">leak recall on the 6-case ablation</span></div>
+        <p>Static AST rules catch explicit known patterns. Prefix and future-mutation invariance also catch indirect future dependencies. The experiment keeps two safe controls clean and makes the boundary between the methods measurable.</p>
+      </div>
+      <div class="card">
+        <h2>Leakage can manufacture a great holdout</h2>
+        <div class="bench"><span class="score">0.630 → 0.991</span><span class="good">causal → leaked holdout R²</span></div>
+        <p>A fixed-seed forecasting experiment keeps the OLS model and chronological split unchanged, then adds one unavailable future feature. R² jumps by 0.361 and RMSE falls to 0.158× the causal baseline. The experiment is synthetic and explicitly not a real-world effect-size estimate.</p>
+      </div>
+      <div class="card">
+        <h2>Context-dependent rules stay explicit</h2>
+        <div class="bench"><span class="score">8/17 → 17/17</span><span class="good">source-only → declared temporal context</span></div>
+        <p>The external corpus spans seven projects: Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, and Dask. Negative-shift semantics transfer across Polars, Xarray, and Dask; explicit context recovers single-level, nested, grouped/panel, and metadata-routing-capable scikit-learn CV helpers while paired <code>TimeSeriesSplit</code> controls stay clean. The previously published NumPy negative-<code>roll</code> miss is now covered by a narrow context-only rule with a paired lag control.</p>
+      </div>
+      <div class="card">
+        <h2>Interventions must be valid</h2>
+        <div class="bench"><span class="score">13/13</span><span class="good">mutation-validity checks pass</span></div>
+        <p>Future-mutation tests reject counterfactuals that alter history, change row count, or violate a caller-supplied input contract. Bounded-probability, OHLC, normalized-vector, and monotonic cumulative experiments show domain-valid mutations keeping causal transforms clean while exposing planted future dependencies.</p>
+      </div>
+      <div class="card">
+        <h2>Conclusions must survive intervention choice</h2>
+        <div class="bench"><span class="score">48/48</span><span class="good">sensitivity checks pass</span></div>
+        <p>Across four domains, three historical cut points, and two valid mutation strengths, every causal control stays clean and every planted future dependency remains detectable. No best-case intervention is selected after the fact.</p>
+      </div>
+      <div class="card">
+        <h2>Behavioral checks transfer to real pandas</h2>
+        <div class="bench"><span class="score">18/18</span><span class="good">executable pandas cases match</span></div>
+        <p>Prefix and future-mutation invariance now cover ordinary, grouped/stateful, irregular missing-data, as-of alignment, resampling-boundary, and multi-column pandas transforms: nine causal controls stay clean and nine future-dependent transforms are detected under explicit future-only mutation contracts.</p>
+      </div>
+      <div class="card">
+        <h2>Revision order must not matter</h2>
+        <div class="bench"><span class="score">120/120</span><span class="good">generated vintage checks pass</span></div>
+        <p>A fixed-seed generator creates 24 append-only vintage histories with explicit eligibility delays. Valid histories stay valid after row shuffling, early decisions cannot see not-yet-eligible vintages, post-eligibility decisions select the same latest vintage after reordering, and duplicate <code>known_at</code> values consistently produce <code>REV001</code>.</p>
+      </div>
+      <div class="card">
+        <h2>Shrink the counterexample</h2>
+        <div class="bench"><span class="score">768/768</span><span class="good">property invariant evaluations pass</span></div>
+        <p>Hypothesis searches 64 generated revision histories across 12 invariants, including multi-column revision keys, null reasons, missing-key rejection, and null-to-value revisions. If one fails, the strategy shrinks the history toward a smaller counterexample while the fixed-seed suite remains available for exact reproduction.</p>
+      </div>
+    </section>
+
+    <p style="margin-top:18px"><a href="RESEARCH_BRIEF.html">Read the research brief →</a> · <a href="EVALUATION.html">Full evaluation, falsification criteria, provenance, and reproduction commands →</a></p>
 
     <section style="margin-top:56px">
       <h2>Make the dataset contract executable</h2>

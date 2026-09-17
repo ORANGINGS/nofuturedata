@@ -403,6 +403,27 @@ def _audit_dataset(
     if contract.revision_policy == "append_only_vintages":
         seen: dict[tuple[str, ...], set[str]] = {}
         for row_index, row in enumerate(rows):
+            missing_key_columns = [
+                column for column in contract.revision_key if _blank(row.get(column))
+            ]
+            if missing_key_columns:
+                report.findings.append(
+                    Finding(
+                        "REV002",
+                        "error",
+                        "logical observation has a missing revision key value",
+                        row=row_index,
+                        column=missing_key_columns[0],
+                        details={
+                            "path": str(dataset_path),
+                            "source_kind": "dataset",
+                            "dataset_index": dataset_index,
+                            "revision_key": list(contract.revision_key),
+                            "missing_key_columns": missing_key_columns,
+                        },
+                    )
+                )
+                continue
             key = tuple(row[column] for column in contract.revision_key)
             known = row.get(contract.known_at, "")
             known_values = seen.setdefault(key, set())

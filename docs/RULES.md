@@ -43,10 +43,45 @@ extra and is not imported until this helper is called.
 | Code | Pattern | Why it is gated |
 | --- | --- | --- |
 | `SRC000` | source or notebook JSON cannot be parsed | an unparsed file cannot be claimed as checked |
-| `SRC001` | negative `shift`, such as `shift(-1)` | reads a later row into an earlier row |
+| `SRC001` | negative `shift`, such as `shift(-1)` or `shift(time=-1)` | reads a later row into an earlier row |
 | `SRC002` | `bfill()` / `backfill()` | can copy future observations backward |
 | `SRC003` | `rolling(..., center=True)` | centered windows can include future rows |
 | `SRC004` | `merge_asof(..., direction="forward"|"nearest")` | may match a row that was not yet available |
+| `SRC005` | negative `diff(...)` / `pct_change(...)` periods | compares an earlier row with a later observation |
+| `SRC006` | `fillna(method="bfill"|"backfill")` | can copy future observations backward through the legacy fillna API |
+| `SRC007` | `interpolate(limit_direction="backward"|"both")` | may use later observations to fill earlier missing values |
+| `SRC008` | whole-series aggregate assigned back to a column on the same dataframe | can broadcast a statistic computed with future rows into historical feature rows |
+| `SRC009` | negative absolute `.iloc[-N]` indexing | selects from the end of the full object and can expose a future row to earlier decisions |
+| `SRC010` | fixed/day interval `resample(...).<aggregate>()` with default/left labeling | can timestamp values observed later in the interval at the interval's left edge |
+| `SRC011` | generic/random/group CV while `temporal_context="time_series"` is enabled | can train/evaluate with future observations when a splitter does not enforce chronological train-before-test order |
+| `SRC012` | `np.roll(..., negative_shift)` / `numpy.roll(..., negative_shift)` while `temporal_context="time_series"` is enabled | circular negative roll moves later values into earlier positions on ordered rows |
+
+`SRC011` is opt-in because the source syntax alone does not establish that a
+dataset is time ordered. Enable it through `audit_python_source(...,
+temporal_context="time_series")` or `nofuture scan ... --time-series`. The
+default source scanner intentionally leaves ordinary IID `KFold` code clean.
+In time-series context the rule covers classical K-fold/shuffle splitters,
+`GroupKFold`, `GroupShuffleSplit`, shuffled `train_test_split`, and scikit-learn
+evaluation/search helpers whose `cv` is omitted, `None`, or a literal integer.
+That helper set includes `cross_val_score`, `cross_validate`, `cross_val_predict`,
+`learning_curve`, `validation_curve`, `permutation_test_score`, `GridSearchCV`,
+and `RandomizedSearchCV`.
+The grouped splitters are context-gated because grouping can separate entities
+without preserving chronological forecasting order. An explicit `TimeSeriesSplit`
+control stays clean; a dynamic `cv=cv` expression is left unresolved rather than
+guessed.
+
+`SRC012` uses the same opt-in temporal context and is deliberately narrower than
+a generic `roll` rule. It recognizes NumPy attribute calls rooted at the
+conventional `np` or `numpy` module names with a literal negative shift. Dynamic
+shifts, imported aliases, arbitrary objects exposing `.roll`, and positive rolls
+remain outside the static rule and are left to behavioral checks when their
+temporal semantics matter.
+
+`SRC001` also recognizes negative offsets on the explicitly temporal keyword
+dimensions `time`, `date`, `datetime`, and `timestamp`. Other negative keyword
+arguments such as `axis=-1` are left clean because their temporal meaning is not
+established by syntax alone.
 
 ## Scan configuration rules
 
@@ -84,10 +119,16 @@ as `%%bash` are skipped.
 Runtime checks are transform-agnostic. They are useful for custom feature code
 that a syntax rule cannot recognize.
 
+`future_mutation_invariance()` also validates the intervention itself. A custom
+mutator must preserve row count and the historical prefix. Callers can provide
+an `input_validator` for domain invariants; an out-of-domain mutation is rejected
+with `ValueError` rather than being reported as `LEAK102`. This separates a
+causal failure from a malformed counterfactual.
+
 ## Dataset manifest rules
 
 Repository-level temporal contracts use the `MAN001`-`MAN007`, `TIME005`,
-`REV001`, and `NULL001` rules documented in the
+`REV001`, `REV002`, and `NULL001` rules documented in the
 [manifest reference](MANIFEST.html). Dataset rows also reuse the availability
 rules above, so a timezone-naive `known_at` remains `TIME001` whether it is
 checked directly or through a manifest.

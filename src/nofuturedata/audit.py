@@ -211,9 +211,10 @@ def as_of(
 
 
 class _LeakVisitor(ast.NodeVisitor):
-    def __init__(self, source: str) -> None:
+    def __init__(self, source: str, *, temporal_context: str | None = None) -> None:
         self.findings: list[Finding] = []
         self.lines = source.splitlines()
+        self.temporal_context = temporal_context
 
     def _suppressed(self, node: ast.AST, code: str) -> bool:
         line_number = getattr(node, "lineno", None)
@@ -244,24 +245,234 @@ class _LeakVisitor(ast.NodeVisitor):
     def _attr_name(node: ast.AST) -> str | None:
         return node.attr if isinstance(node, ast.Attribute) else None
 
-    def visit_Call(self, node: ast.Call) -> Any:
-        name = self._attr_name(node.func)
-        if name == "shift":
-            value = node.args[0] if node.args else None
-            if value is None:
-                for keyword in node.keywords:
-                    if keyword.arg == "periods":
-                        value = keyword.value
+    @staticmethod
+    def _argument(node: ast.Call, position: int, keyword_name: str) -> ast.AST | None:
+        if len(node.args) > position:
+            return node.args[position]
+        for keyword in node.keywords:
+            if keyword.arg == keyword_name:
+                return keyword.value
+        return None
+
+    @staticmethod
+    def _keyword_argument(node: ast.Call, keyword_name: str) -> ast.AST | None:
+        for keyword in node.keywords:
+            if keyword.arg == keyword_name:
+                return keyword.value
+        return None
+
+    @staticmethod
+    def _is_negative_number(node: ast.AST | None) -> bool:
+        return (
+            isinstance(node, ast.UnaryOp)
+            and isinstance(node.op, ast.USub)
+            and isinstance(node.operand, ast.Constant)
+            and isinstance(node.operand.value, (int, float))
+        )
+
+    @staticmethod
+    def _literal_string(node: ast.AST | None) -> str | None:
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value.lower()
+        return None
+
+    @staticmethod
+    def _resample_rule_defaults_left(rule: str | None) -> bool:
+        """Recognize literal frequencies whose pandas resample label defaults left.
+
+        This stays deliberately narrow: dynamic frequencies and month/quarter/
+        year/week-end aliases are left to review because their defaults differ.
+        """
+
+        if not rule:
+            return False
+        compact = rule.replace(" ", "").lower()
+        if compact.endswith(("w", "me", "ye", "qe", "bme", "bye", "bqe")):
+            return False
+        return compact.endswith(
+            (
+                "h",
+                "hour",
+                "hours",
+                "min",
+                "minute",
+                "minutes",
+                "t",
+                "s",
+                "sec",
+                "second",
+                "seconds",
+                "ms",
+                "us",
+                "ns",
+                "d",
+                "day",
+                "days",
+            )
+        )
+
+    @staticmethod
+    def _root_name(node: ast.AST | None) -> str | None:
+        current = node
+        while isinstance(current, (ast.Attribute, ast.Subscript)):
+            current = current.value
+        return current.id if isinstance(current, ast.Name) else None
+
+    def visit_Assign(self, node: ast.Assign) -> Any:
+        # Conservatively gate whole-series aggregates only when they are written
+        # back as a feature on the same dataframe object.  This avoids flagging
+        # reporting/statistics code such as `summary = series.mean()` and skips
+        # windowed/grouped receivers, whose receiver is itself a Call node.
+        if isinstance(node.value, ast.Call) and isinstance(node.value.func, ast.Attribute):
+            aggregate = node.value.func.attr
+            receiver = node.value.func.value
+            if aggregate in {"mean", "median", "min", "max", "sum", "std", "var"} and isinstance(
+                receiver, (ast.Attribute, ast.Subscript)
+            ):
+                receiver_root = self._root_name(receiver)
+                for target in node.targets:
+                    if (
+                        isinstance(target, ast.Subscript)
+                        and receiver_root is not None
+                        and self._root_name(target) == receiver_root
+                    ):
+                        self._add(
+                            node.value,
+                            "SRC008",
+                            "whole-series aggregate assigned back to the same dataframe can use future rows",
+                        )
                         break
-            if isinstance(value, ast.UnaryOp) and isinstance(value.op, ast.USub):
-                if isinstance(value.operand, ast.Constant) and isinstance(
-                    value.operand.value, (int, float)
+        return self.generic_visit(node)
+
+    def visit_Subscript(self, node: ast.Subscript) -> Any:
+        # Negative absolute iloc positions select rows from the end of the full
+        # object.  In vectorized feature/backtest code this commonly exposes a
+        # future row to earlier decisions.  Dynamic iloc expressions are left to
+        # behavioral checks because their direction cannot be inferred safely.
+        if (
+            isinstance(node.value, ast.Attribute)
+            and node.value.attr == "iloc"
+            and self._is_negative_number(node.slice)
+        ):
+            self._add(
+                node,
+                "SRC009",
+                "negative absolute iloc indexing can select a future row from the full dataset",
+            )
+        return self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> Any:
+        name = node.func.id if isinstance(node.func, ast.Name) else self._attr_name(node.func)
+        if self.temporal_context == "time_series":
+            if (
+                name == "roll"
+                and isinstance(node.func, ast.Attribute)
+                and self._root_name(node.func) in {"np", "numpy"}
+            ):
+                shift = self._argument(node, 1, "shift")
+                if self._is_negative_number(shift):
+                    self._add(
+                        node,
+                        "SRC012",
+                        "negative NumPy roll moves later values into earlier positions in time-series data",
+                    )
+            if name in {
+                "KFold",
+                "StratifiedKFold",
+                "RepeatedKFold",
+                "RepeatedStratifiedKFold",
+                "ShuffleSplit",
+                "StratifiedShuffleSplit",
+                "GroupKFold",
+                "GroupShuffleSplit",
+            }:
+                self._add(
+                    node,
+                    "SRC011",
+                    "generic/random/group cross-validation can train on future observations in time-series evaluation",
+                )
+            elif name == "train_test_split":
+                shuffle = self._keyword_argument(node, "shuffle")
+                if shuffle is None or (
+                    isinstance(shuffle, ast.Constant) and shuffle.value is True
                 ):
                     self._add(
                         node,
-                        "SRC001",
-                        "negative shift can read future rows",
+                        "SRC011",
+                        "shuffled train/test splitting can mix future observations into time-series evaluation",
                     )
+            elif name in {
+                "cross_val_score",
+                "cross_validate",
+                "cross_val_predict",
+                "learning_curve",
+                "validation_curve",
+                "permutation_test_score",
+                "GridSearchCV",
+                "RandomizedSearchCV",
+            }:
+                cv = self._keyword_argument(node, "cv")
+                uses_default_or_integer_cv = cv is None or (
+                    isinstance(cv, ast.Constant)
+                    and (
+                        cv.value is None
+                        or (
+                            isinstance(cv.value, int)
+                            and not isinstance(cv.value, bool)
+                            and cv.value >= 2
+                        )
+                    )
+                )
+                if uses_default_or_integer_cv:
+                    self._add(
+                        node,
+                        "SRC011",
+                        "default/integer cross-validation can use IID folds that train on future observations in time-series evaluation",
+                    )
+        if name in {
+            "mean",
+            "median",
+            "min",
+            "max",
+            "sum",
+            "std",
+            "var",
+            "first",
+            "last",
+            "ohlc",
+            "count",
+            "size",
+            "nunique",
+        } and isinstance(node.func, ast.Attribute):
+            receiver = node.func.value
+            if (
+                isinstance(receiver, ast.Call)
+                and isinstance(receiver.func, ast.Attribute)
+                and receiver.func.attr == "resample"
+            ):
+                rule = self._literal_string(self._argument(receiver, 0, "rule"))
+                label = self._literal_string(self._keyword_argument(receiver, "label"))
+                if label == "left" or (
+                    label is None and self._resample_rule_defaults_left(rule)
+                ):
+                    self._add(
+                        node,
+                        "SRC010",
+                        "left-labeled resample aggregation can timestamp later interval values at the interval start",
+                    )
+        if name == "shift":
+            value = self._argument(node, 0, "periods")
+            temporal_dimension_shift = any(
+                keyword.arg in {"time", "date", "datetime", "timestamp"}
+                and self._is_negative_number(keyword.value)
+                for keyword in node.keywords
+            )
+            if self._is_negative_number(value) or temporal_dimension_shift:
+                self._add(
+                    node,
+                    "SRC001",
+                    "negative shift can read future rows",
+                )
         if name in {"bfill", "backfill"}:
             self._add(
                 node,
@@ -288,10 +499,41 @@ class _LeakVisitor(ast.NodeVisitor):
                         "SRC004",
                         "forward/nearest merge_asof may select a future row",
                     )
+        if name in {"diff", "pct_change"}:
+            periods = self._argument(node, 0, "periods")
+            if self._is_negative_number(periods):
+                self._add(
+                    node,
+                    "SRC005",
+                    "negative diff/pct_change periods can read future rows",
+                )
+        if name == "fillna":
+            method = self._literal_string(self._keyword_argument(node, "method"))
+            if method in {"bfill", "backfill"}:
+                self._add(
+                    node,
+                    "SRC006",
+                    "backward fillna can copy future observations into the past",
+                )
+        if name == "interpolate":
+            direction = self._literal_string(
+                self._keyword_argument(node, "limit_direction")
+            )
+            if direction in {"backward", "both"}:
+                self._add(
+                    node,
+                    "SRC007",
+                    "backward/both interpolation can use later observations",
+                )
         return self.generic_visit(node)
 
 
-def audit_python_source(source: str, *, filename: str = "<memory>") -> AuditReport:
+def audit_python_source(
+    source: str,
+    *,
+    filename: str = "<memory>",
+    temporal_context: str | None = None,
+) -> AuditReport:
     """Statically flag common future-looking pandas patterns.
 
     This is a heuristic linter.  Runtime invariance checks should be used as the
@@ -312,7 +554,9 @@ def audit_python_source(source: str, *, filename: str = "<memory>") -> AuditRepo
             ],
             rows_scanned=len(source.splitlines()),
         )
-    visitor = _LeakVisitor(source)
+    if temporal_context not in {None, "time_series"}:
+        raise ValueError("temporal_context must be None or 'time_series'")
+    visitor = _LeakVisitor(source, temporal_context=temporal_context)
     visitor.visit(tree)
     return AuditReport(
         findings=visitor.findings,
@@ -320,7 +564,12 @@ def audit_python_source(source: str, *, filename: str = "<memory>") -> AuditRepo
     )
 
 
-def audit_notebook_source(source: str, *, filename: str = "<memory>.ipynb") -> AuditReport:
+def audit_notebook_source(
+    source: str,
+    *,
+    filename: str = "<memory>.ipynb",
+    temporal_context: str | None = None,
+) -> AuditReport:
     """Scan Python code cells in a Jupyter notebook.
 
     Notebook findings keep the cell-local line number and add ``cell`` and
@@ -364,6 +613,7 @@ def audit_notebook_source(source: str, *, filename: str = "<memory>.ipynb") -> A
         report = audit_python_source(
             cell_source,
             filename=f"{filename}#cell-{cell_index + 1}",
+            temporal_context=temporal_context,
         )
         for finding in report.findings:
             finding.details.update(
@@ -466,15 +716,37 @@ def future_mutation_invariance(
     *,
     cut_points: Sequence[int] | None = None,
     mutator: Callable[[Sequence[Any], int], Sequence[Any]] | None = None,
+    input_validator: Callable[[Sequence[Any]], bool] | None = None,
 ) -> AuditReport:
-    """Check whether changing future values alters already-produced outputs."""
+    """Check whether changing future values alters already-produced outputs.
+
+    ``input_validator`` can encode domain invariants that a mutation must
+    preserve (for example probabilities in ``[0, 1]`` or valid OHLC rows).  A
+    mutation is rejected rather than interpreted as leakage if it changes the
+    historical prefix, changes sequence length, or violates that contract.
+    """
+
+    if input_validator is not None and not input_validator(rows):
+        raise ValueError("input_validator rejected the original rows")
 
     full = list(transform(rows))
     points = list(cut_points) if cut_points is not None else _default_cut_points(len(rows))
     change_future = mutator or _mutate_future
     report = AuditReport(rows_scanned=len(rows))
     for point in points:
-        changed_rows = change_future(rows, point)
+        changed_rows = list(change_future(rows, point))
+        if len(changed_rows) != len(rows):
+            raise ValueError(
+                f"future mutator changed row count at cut point {point}"
+            )
+        if changed_rows[:point] != list(rows[:point]):
+            raise ValueError(
+                f"future mutator changed the historical prefix at cut point {point}"
+            )
+        if input_validator is not None and not input_validator(changed_rows):
+            raise ValueError(
+                f"future mutator violated the input contract at cut point {point}"
+            )
         changed = list(transform(changed_rows))[:point]
         expected = full[:point]
         if changed != expected:

@@ -124,6 +124,25 @@ class ManifestTests(unittest.TestCase):
                 "MAN004", [item.code for item in audit_manifest(manifest).findings]
             )
 
+    def test_revision_key_row_values_must_not_be_blank(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            manifest = self._write_contract(root)
+            (root / "data.csv").write_text(
+                "series_id,event_time,known_at\n"
+                ",2026-01-01,2026-01-02T00:00:00+00:00\n",
+                encoding="utf-8",
+            )
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+            payload["datasets"][0]["revision"] = {
+                "policy": "append_only_vintages",
+                "key": ["series_id", "event_time"],
+            }
+            manifest.write_text(json.dumps(payload), encoding="utf-8")
+            codes = [item.code for item in audit_manifest(manifest).findings]
+            self.assertIn("REV002", codes)
+            self.assertNotIn("REV001", codes)
+
     def test_portable_json_schema_is_valid_json(self) -> None:
         schema = (
             Path(__file__).parents[1]

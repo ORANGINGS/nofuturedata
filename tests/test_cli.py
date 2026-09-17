@@ -50,6 +50,22 @@ class CliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             self.assertEqual(main(["scan", folder]), 1)
 
+    def test_time_series_scan_context_is_opt_in(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "cv.py"
+            path.write_text(
+                "cv = KFold(n_splits=5, shuffle=True, random_state=42)\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(main(["scan", str(path)]), 0)
+            self.assertEqual(main(["scan", str(path), "--time-series"]), 1)
+
+            path.write_text(
+                "cv = TimeSeriesSplit(n_splits=5, gap=48)\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(main(["scan", str(path), "--time-series"]), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

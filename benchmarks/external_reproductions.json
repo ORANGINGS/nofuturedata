@@ -1,0 +1,322 @@
+[
+  {
+    "id": "freqtrade-negative-shift",
+    "kind": "leak",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation lists negative shift as a future-data lookahead pattern.",
+    "source": "future_close = dataframe['close'].shift(-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "freqtrade-global-mean",
+    "kind": "leak",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation warns that whole-dataframe aggregations let a signal candle see future candles.",
+    "source": "dataframe['mean_volume'] = dataframe['volume'].mean()\n",
+    "expected_current_codes": ["SRC008"]
+  },
+  {
+    "id": "freqtrade-absolute-iloc",
+    "kind": "leak",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation warns against absolute iloc indexing inside populate methods because full backtest data are present.",
+    "source": "last_close = dataframe.iloc[-1]['close']\n",
+    "expected_current_codes": ["SRC009"]
+  },
+  {
+    "id": "freqtrade-left-labeled-resample",
+    "kind": "leak",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation warns that default resample labeling can move data from an hour boundary to the start of the hour.",
+    "source": "hourly = dataframe.resample('1h').last()\n",
+    "expected_current_codes": ["SRC010"]
+  },
+  {
+    "id": "freqtrade-rolling-mean-control",
+    "kind": "safe",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation gives a trailing rolling mean as the non-biased alternative to a whole-dataframe mean.",
+    "source": "dataframe['volume_mean_12'] = dataframe['volume'].rolling(12).mean()\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "freqtrade-positive-shift-control",
+    "kind": "safe",
+    "source_project": "Freqtrade",
+    "source_url": "https://docs.freqtrade.io/en/2026.8/strategy-customization/",
+    "source_basis": "Official strategy documentation recommends shift to access a previous candle rather than absolute indexing.",
+    "source": "previous_close = dataframe['close'].shift(1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "pandas-backfill-temporal",
+    "kind": "leak",
+    "source_project": "pandas",
+    "source_url": "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.fillna.html",
+    "source_basis": "pandas documents bfill as using the next valid observation; NoFutureData classifies that as future use when row order is time.",
+    "source": "filled = series.bfill()\n",
+    "expected_current_codes": ["SRC002"]
+  },
+  {
+    "id": "pandas-forward-fill-control",
+    "kind": "safe",
+    "source_project": "pandas",
+    "source_url": "https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.ffill.html",
+    "source_basis": "pandas documents ffill as propagating the last valid observation forward, which is causal for time-ordered rows.",
+    "source": "filled = series.ffill()\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-random-kfold-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/dev/modules/cross_validation.html#cross-validation-of-time-series-data",
+    "source_basis": "Official cross-validation guidance says classical KFold/ShuffleSplit assumptions are inappropriate for time-series data because train/test observations can remain unreasonably correlated. This reproduction carries explicit time-series context that the source-only scanner does not infer.",
+    "context_required": true,
+    "context": "X is a time-ordered event log and this splitter is used for model evaluation.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "cv = KFold(n_splits=5, shuffle=True, random_state=42)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-cross-val-score-default-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_score.html",
+    "source_basis": "The cross_val_score API documents that None or an integer cv selects KFold or StratifiedKFold; scikit-learn's time-series guidance explains why classical folds are inappropriate when observations are time ordered.",
+    "context_required": true,
+    "context": "X and y are time ordered and cross_val_score is used to estimate future predictive performance.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "scores = cross_val_score(model, X, y, cv=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-group-kfold-panel-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html",
+    "source_basis": "Official GroupKFold documentation states that groups appear in arbitrary order throughout the folds. For a panel whose rows remain time ordered within entities, group separation alone does not enforce chronological train-before-test evaluation.",
+    "context_required": true,
+    "context": "Rows are a panel time series grouped by entity; GroupKFold is used for forecasting evaluation without an additional chronological split.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "cv = GroupKFold(n_splits=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-group-shuffle-panel-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupShuffleSplit.html",
+    "source_basis": "Official GroupShuffleSplit documentation describes randomized train/test partitions over groups. In panel forecasting, randomized group partitions do not by themselves impose chronological train-before-test ordering.",
+    "context_required": true,
+    "context": "Rows are a panel time series grouped by entity; GroupShuffleSplit is used for forecasting evaluation without an additional chronological split.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "cv = GroupShuffleSplit(n_splits=5, random_state=42)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-learning-curve-default-cv-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.learning_curve.html",
+    "source_basis": "The official learning_curve API is a metadata-routing-capable model-selection router and documents that None or an integer cv selects KFold or StratifiedKFold. For explicitly time-ordered data, those folds do not enforce train-before-test chronology.",
+    "context_required": true,
+    "context": "X and y are time ordered and learning_curve is used to evaluate future predictive performance.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "sizes, train, test = learning_curve(model, X, y, cv=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-validation-curve-default-cv-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.validation_curve.html",
+    "source_basis": "The official validation_curve API supports metadata routing and documents that None or an integer cv selects KFold or StratifiedKFold. On explicitly time-ordered data, parameter validation with those folds can train on observations later than a validation fold.",
+    "context_required": true,
+    "context": "X and y are time ordered and validation_curve is used for temporal model selection.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "train, test = validation_curve(model, X, y, param_name='alpha', param_range=[0.1, 1.0], cv=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-permutation-test-default-cv-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.permutation_test_score.html",
+    "source_basis": "The official permutation_test_score API supports metadata routing and documents that None or an integer cv selects KFold or StratifiedKFold. Its cross-validated score therefore inherits the same chronology problem when the dataset is explicitly time ordered.",
+    "context_required": true,
+    "context": "X and y are time ordered and permutation_test_score is used to assess a forecasting model.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011"],
+    "source": "score, perm, p = permutation_test_score(model, X, y, cv=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-learning-curve-timeseries-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+    "source_basis": "TimeSeriesSplit is designed for time-ordered data. Passing it explicitly to learning_curve makes the chronological evaluation contract visible in source.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "sizes, train, test = learning_curve(model, X, y, cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-validation-curve-timeseries-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+    "source_basis": "TimeSeriesSplit is designed for time-ordered data. Passing it explicitly to validation_curve provides a chronological control for parameter validation.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "train, test = validation_curve(model, X, y, param_name='alpha', param_range=[0.1, 1.0], cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-permutation-test-timeseries-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+    "source_basis": "TimeSeriesSplit is designed for time-ordered data. Passing it explicitly to permutation_test_score prevents its cross-validation stage from silently selecting ordinary IID folds.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "score, perm, p = permutation_test_score(model, X, y, cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-time-series-split-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/auto_examples/applications/plot_cyclical_feature_engineering.html#time-based-cross-validation",
+    "source_basis": "Official time-related feature-engineering guidance uses TimeSeriesSplit with a gap to preserve temporal evaluation order.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "cv = TimeSeriesSplit(n_splits=5, gap=48, test_size=1000)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-cross-val-score-timeseries-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+    "source_basis": "The TimeSeriesSplit API is designed for time-ordered data; passing it explicitly to cross_val_score makes the temporal evaluation contract visible in source.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "scores = cross_val_score(model, X, y, cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-nested-default-cv-time-series",
+    "kind": "leak",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html",
+    "source_basis": "The official nested-CV example establishes an inner GridSearchCV and outer cross_val_score structure. On explicitly time-ordered data, using integer/default IID folds at both levels can train and tune on future observations, so both calls are context-gated.",
+    "context_required": true,
+    "context": "X and y are time ordered; GridSearchCV is the inner model-selection loop and cross_val_score is the outer generalization estimate.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC011", "SRC011"],
+    "source": "search = GridSearchCV(model, params, cv=5)\nscores = cross_val_score(search, X, y, cv=5)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "sklearn-nested-timeseries-control",
+    "kind": "safe",
+    "source_project": "scikit-learn",
+    "source_url": "https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html",
+    "source_basis": "TimeSeriesSplit is designed for time-ordered data. Supplying it explicitly to both the inner GridSearchCV and outer cross_val_score makes both levels of the nested temporal evaluation contract visible.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "search = GridSearchCV(model, params, cv=TimeSeriesSplit(n_splits=5, gap=24))\nscores = cross_val_score(search, X, y, cv=TimeSeriesSplit(n_splits=5, gap=24))\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "polars-negative-shift",
+    "kind": "leak",
+    "source_project": "Polars",
+    "source_url": "https://docs.pola.rs/api/python/version/1/reference/series/index.html#polars.Series.shift",
+    "source_basis": "Official Polars Series.shift documentation says a negative n shifts in the opposite direction and is similar to SQL LEAD; on time-ordered rows this exposes later values to earlier rows.",
+    "source": "future_value = pl.col('value').shift(-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "polars-positive-shift-control",
+    "kind": "safe",
+    "source_project": "Polars",
+    "source_url": "https://docs.pola.rs/api/python/version/1/reference/series/index.html#polars.Series.shift",
+    "source_basis": "Official Polars documentation describes positive shift as similar to SQL LAG, so a positive one-row shift is a causal previous-row control for ordered data.",
+    "source": "previous_value = pl.col('value').shift(1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "xarray-negative-time-shift",
+    "kind": "leak",
+    "source_project": "Xarray",
+    "source_url": "https://docs.xarray.dev/en/latest/generated/xarray.DataArray.shift.html",
+    "source_basis": "Official Xarray DataArray.shift documentation states that negative offsets shift data to the left while coordinates stay in place. On a dimension explicitly named time, shift(time=-1) exposes a later observation at an earlier timestamp.",
+    "source": "future_value = array.shift(time=-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "xarray-positive-time-shift-control",
+    "kind": "safe",
+    "source_project": "Xarray",
+    "source_url": "https://docs.xarray.dev/en/latest/generated/xarray.DataArray.shift.html",
+    "source_basis": "The same Xarray API defines positive offsets as shifting to the right. On a time dimension, shift(time=1) is the paired previous-observation control.",
+    "source": "previous_value = array.shift(time=1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "numpy-negative-roll-time-series",
+    "kind": "leak",
+    "source_project": "NumPy",
+    "source_url": "https://numpy.org/doc/stable/reference/generated/numpy.roll.html",
+    "source_basis": "Official NumPy roll documentation defines circular element shifts; a negative shift moves later elements toward earlier positions. In explicitly time-ordered data this is a future dependency, so the opt-in time-series context detects the narrow NumPy attribute-call form.",
+    "context_required": true,
+    "context": "values is time ordered and the rolled array is used as a historical feature.",
+    "scan_context": "time_series",
+    "expected_context_codes": ["SRC012"],
+    "source": "future_value = np.roll(values, -1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "numpy-lag-roll-masked-control",
+    "kind": "safe",
+    "source_project": "NumPy",
+    "source_url": "https://numpy.org/doc/stable/reference/generated/numpy.roll.html",
+    "source_basis": "A positive roll moves prior values forward; explicitly masking the wrapped first element removes the circular future value and provides a causal lag control for time-ordered rows.",
+    "scan_context": "time_series",
+    "expected_context_codes": [],
+    "source": "lag = np.roll(values, 1)\nlag[0] = np.nan\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "dask-negative-shift",
+    "kind": "leak",
+    "source_project": "Dask",
+    "source_url": "https://docs.dask.org/en/stable/generated/dask.dataframe.Series.shift.html",
+    "source_basis": "Official Dask Series.shift documentation states that periods may be positive or negative; on time-ordered rows, a negative one-row shift exposes the next observation to the current row.",
+    "source": "future_value = series.shift(-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "dask-positive-shift-control",
+    "kind": "safe",
+    "source_project": "Dask",
+    "source_url": "https://docs.dask.org/en/stable/generated/dask.dataframe.Series.shift.html",
+    "source_basis": "The same Dask API documents positive periods; a positive one-row shift is the paired previous-row control for time-ordered data.",
+    "source": "previous_value = series.shift(1)\n",
+    "expected_current_codes": []
+  }
+]

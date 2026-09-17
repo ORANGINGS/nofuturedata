@@ -23,7 +23,65 @@ jobs:
       - run: pytest
       - run: nofuture scan src tests examples/safe_pipeline.py --sarif nofuturedata.sarif
       - run: nofuture audit-manifest examples/temporal_contract.json
-      - run: python benchmarks/run_benchmark.py
+      - run: python benchmarks/run_evaluation.py
+      - run: python benchmarks/check_documented_metrics.py
+      - name: capture machine-readable research evaluation
+        if: matrix.python-version == '3.12'
+        run: python benchmarks/run_evaluation.py --json > evaluation.json
+      - name: upload research evaluation artifact
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nofuturedata-evaluation-py312
+          path: evaluation.json
+          retention-days: 30
+      - name: build and installed-wheel smoke test
+        if: matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          python -m build
+          mkdir -p .sdist-smoke
+          tar -xzf dist/nofuturedata-*.tar.gz -C .sdist-smoke
+          sdist_dir="$(find .sdist-smoke -mindepth 1 -maxdepth 1 -type d -name 'nofuturedata-*' -print -quit)"
+          test -n "$sdist_dir"
+          test -f "$sdist_dir/benchmarks/run_evaluation.py"
+          test -f "$sdist_dir/benchmarks/check_documented_metrics.py"
+          test -f "$sdist_dir/benchmarks/behavioral_generalization.py"
+          test -f "$sdist_dir/benchmarks/revision_vintage_robustness.py"
+          test -f "$sdist_dir/benchmarks/property_revision_vintage.py"
+          test -f "$sdist_dir/docs/RESEARCH_BRIEF.md"
+          test -f "$sdist_dir/docs/EVALUATION.md"
+          test -f "$sdist_dir/schemas/temporal-contract.schema.json"
+          (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/run_evaluation.py)
+          (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/check_documented_metrics.py)
+          python -m venv .wheel-smoke
+          .wheel-smoke/bin/python -m pip install --quiet dist/*.whl
+          .wheel-smoke/bin/python -c "from importlib.metadata import version; import nofuturedata; assert nofuturedata.__version__ == version('nofuturedata')"
+          printf "x = df.iloc[-1]['x']\n" > .wheel-smoke/leak.py
+          set +e
+          .wheel-smoke/bin/nofuture scan .wheel-smoke/leak.py > .wheel-smoke/scan.txt
+          status=$?
+          set -e
+          cat .wheel-smoke/scan.txt
+          test "$status" -eq 1
+          grep -q '\[SRC009\]' .wheel-smoke/scan.txt
+          printf "cv = KFold(n_splits=5, shuffle=True)\n" > .wheel-smoke/cv.py
+          set +e
+          .wheel-smoke/bin/nofuture scan .wheel-smoke/cv.py --time-series > .wheel-smoke/cv-scan.txt
+          status=$?
+          set -e
+          cat .wheel-smoke/cv-scan.txt
+          test "$status" -eq 1
+          grep -q '\[SRC011\]' .wheel-smoke/cv-scan.txt
+          printf "scores = cross_val_score(model, X, y, cv=5)\n" > .wheel-smoke/cv-helper.py
+          .wheel-smoke/bin/nofuture scan .wheel-smoke/cv-helper.py > .wheel-smoke/cv-helper-generic.txt
+          set +e
+          .wheel-smoke/bin/nofuture scan .wheel-smoke/cv-helper.py --time-series > .wheel-smoke/cv-helper-temporal.txt
+          status=$?
+          set -e
+          cat .wheel-smoke/cv-helper-temporal.txt
+          test "$status" -eq 1
+          grep -q '\[SRC011\]' .wheel-smoke/cv-helper-temporal.txt
       - name: pre-commit hook smoke test
         if: matrix.python-version == '3.12'
         run: |

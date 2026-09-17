@@ -16,6 +16,10 @@ inputs:
     description: "Upload SARIF to GitHub Code Scanning (caller needs security-events: write)"
     required: false
     default: "false"
+  time-series:
+    description: "Enable context-dependent review gates for time-series evaluation code"
+    required: false
+    default: "false"
 runs:
   using: "composite"
   steps:
@@ -29,12 +33,17 @@ runs:
       env:
         NOFUTURE_PATH: ${{ inputs.path }}
         NOFUTURE_SARIF: ${{ inputs.sarif }}
+        NOFUTURE_TIME_SERIES: ${{ inputs.time-series }}
       run: |
         set +e
+        args=(scan "$NOFUTURE_PATH")
+        if [ "$NOFUTURE_TIME_SERIES" = "true" ]; then
+          args+=(--time-series)
+        fi
         if [ -n "$NOFUTURE_SARIF" ]; then
-          nofuture scan "$NOFUTURE_PATH" --sarif "$NOFUTURE_SARIF"
+          nofuture "${args[@]}" --sarif "$NOFUTURE_SARIF"
         else
-          nofuture scan "$NOFUTURE_PATH"
+          nofuture "${args[@]}"
         fi
         status=$?
         echo "status=$status" >> "$GITHUB_OUTPUT"

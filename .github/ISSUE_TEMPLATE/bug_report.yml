@@ -3,6 +3,19 @@ description: Report a false positive, false negative, crash, or incorrect tempor
 title: "[bug] "
 labels: ["bug"]
 body:
+  - type: dropdown
+    id: failure_class
+    attributes:
+      label: Failure class
+      description: Choose the closest causal-validation failure.
+      options:
+        - False negative (a leak passed)
+        - False positive (a causal pattern was flagged)
+        - Incorrect availability / point-in-time result
+        - Crash or parse/configuration failure
+        - Other
+    validations:
+      required: true
   - type: textarea
     id: reproducer
     attributes:
@@ -12,10 +25,40 @@ body:
     validations:
       required: true
   - type: textarea
+    id: safe_control
+    attributes:
+      label: Paired safe control
+      description: If possible, provide the closest similar pattern that should remain clean.
+      render: python
+  - type: dropdown
+    id: temporal_context
+    attributes:
+      label: Scan context
+      description: Was an explicit temporal context enabled for the failing scan?
+      options:
+        - Source-only / no temporal context
+        - time_series
+        - Other or unsure
+    validations:
+      required: true
+  - type: input
+    id: source_url
+    attributes:
+      label: Public source or documentation URL
+      description: Optional provenance for a library/API behavior or real-world pattern.
+  - type: textarea
     id: expected
     attributes:
       label: Expected behavior
       description: Explain what information was actually available at the historical decision time.
+    validations:
+      required: true
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed NoFutureData output
+      description: Include rule IDs, CLI output, or the unexpected result.
+      render: text
     validations:
       required: true
   - type: input
@@ -32,4 +75,12 @@ body:
       placeholder: 3.12
     validations:
       required: true
-
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: Reproduction use
+      options:
+        - label: I removed credentials, private data, and proprietary code from the reproducer.
+          required: true
+        - label: The maintainers may minimize this public reproducer into a regression/evaluation case.
+          required: false

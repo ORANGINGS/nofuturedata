@@ -88,6 +88,7 @@ a schema-valid dataset with deliberately invalid temporal rows under
 | `MAN007` | dataset is missing a required contract column |
 | `TIME005` | explicit `eligible_from` policy has a missing row value |
 | `REV001` | a logical observation has duplicate revision availability time |
+| `REV002` | a logical observation has a missing revision-key value |
 | `NULL001` | a monitored value is missing without a null reason |
 
 Availability findings such as `TIME001`, `TIME003`, and `LEAK001` are reused

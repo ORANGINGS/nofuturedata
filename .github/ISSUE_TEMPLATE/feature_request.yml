@@ -3,6 +3,11 @@ description: Propose a general temporal-leakage check backed by a concrete examp
 title: "[rule] "
 labels: ["enhancement"]
 body:
+  - type: input
+    id: source_url
+    attributes:
+      label: Public source or documentation URL
+      description: Prefer an independently maintained source that establishes the API or failure semantics.
   - type: textarea
     id: failure
     attributes:
@@ -21,5 +26,12 @@ body:
     id: scope
     attributes:
       label: Why this belongs in the provider-agnostic core
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Falsification / acceptance criteria
+      description: State what must stay clean, what must be detected, and which contexts should or should not enable the rule.
     validations:
       required: true

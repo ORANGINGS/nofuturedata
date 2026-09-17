@@ -197,19 +197,208 @@ def features(df):
     a2 = df.x.shift(periods=-2)
     b = df.x.bfill()
     c = df.x.rolling(5, center=True).mean()
+    d = df.x.diff(-1)
+    e = df.x.pct_change(periods=-2)
+    f = df.x.fillna(method='bfill')
+    g = df.x.interpolate(limit_direction='both')
+    df['global_mean'] = df.x.mean()
+    h = df.iloc[-1]['x']
+    i = df.resample('1h').last()
     return df.merge_asof(df, on='t', direction='forward')
 """
         findings = audit_python_source(source).findings
         codes = {item.code for item in findings}
-        self.assertEqual(codes, {"SRC001", "SRC002", "SRC003", "SRC004"})
+        self.assertEqual(
+            codes,
+            {"SRC001", "SRC002", "SRC003", "SRC004", "SRC005", "SRC006", "SRC007", "SRC008", "SRC009", "SRC010"},
+        )
         self.assertEqual(sum(item.code == "SRC001" for item in findings), 2)
+        self.assertEqual(sum(item.code == "SRC005" for item in findings), 2)
 
     def test_safe_trailing_patterns_pass(self) -> None:
         source = """
 def features(df):
-    return df.x.shift(1).rolling(5).mean()
+    a = df.x.shift(1).rolling(5).mean()
+    b = df.x.diff(1)
+    c = df.x.pct_change(periods=2)
+    d = df.x.fillna(method='ffill')
+    e = df.x.interpolate(limit_direction='forward')
+    summary = df.x.mean()
+    df['rolling_mean'] = df.x.rolling(12).mean()
+    first = df.iloc[0]['x']
+    hourly = df.resample('1h', label='right').last()
+    monthly = df.resample('1ME').last()
+    return a + b + c + d + e + summary + first
 """
         self.assertTrue(audit_python_source(source).ok)
+
+    def test_temporal_dimension_shift_is_gated_narrowly(self) -> None:
+        self.assertEqual(
+            [
+                item.code
+                for item in audit_python_source(
+                    "future = array.shift(time=-1)\n"
+                ).findings
+            ],
+            ["SRC001"],
+        )
+        self.assertTrue(audit_python_source("lag = array.shift(time=1)\n").ok)
+        self.assertTrue(audit_python_source("other = array.shift(axis=-1)\n").ok)
+
+    def test_whole_series_aggregate_requires_same_dataframe_feature_assignment(self) -> None:
+        self.assertFalse(audit_python_source("df['m'] = df.x.mean()\n").ok)
+        self.assertTrue(audit_python_source("summary = df.x.mean()\n").ok)
+        self.assertTrue(audit_python_source("df['m'] = other.x.mean()\n").ok)
+        self.assertTrue(audit_python_source("df['m'] = df.x.rolling(12).mean()\n").ok)
+
+    def test_negative_absolute_iloc_is_gated_but_nonnegative_is_clean(self) -> None:
+        self.assertFalse(audit_python_source("last = df.iloc[-1]['x']\n").ok)
+        self.assertTrue(audit_python_source("first = df.iloc[0]['x']\n").ok)
+
+    def test_left_labeled_fixed_interval_resample_is_gated_narrowly(self) -> None:
+        self.assertFalse(audit_python_source("hourly = df.resample('1h').last()\n").ok)
+        self.assertFalse(
+            audit_python_source("bars = df.resample('15min', label='left').max()\n").ok
+        )
+        self.assertTrue(
+            audit_python_source("hourly = df.resample('1h', label='right').last()\n").ok
+        )
+        self.assertTrue(audit_python_source("monthly = df.resample('1ME').last()\n").ok)
+        self.assertTrue(audit_python_source("dynamic = df.resample(freq).last()\n").ok)
+
+    def test_time_series_context_gates_random_cv_without_global_false_positive(self) -> None:
+        random_kfold = "cv = KFold(n_splits=5, shuffle=True, random_state=42)\n"
+        grouped_cv = [
+            "cv = GroupKFold(n_splits=5)\n",
+            "cv = GroupShuffleSplit(n_splits=5, random_state=42)\n",
+        ]
+        random_split = "train, test = train_test_split(X, test_size=0.2)\n"
+        default_cv_helpers = [
+            "scores = cross_val_score(model, X, y)\n",
+            "scores = cross_validate(model, X, y, cv=None)\n",
+            "pred = cross_val_predict(model, X, y, cv=5)\n",
+            "sizes, train, test = learning_curve(model, X, y, cv=5)\n",
+            "train, test = validation_curve(model, X, y, param_name='alpha', param_range=[0.1, 1.0])\n",
+            "score, perm, p = permutation_test_score(model, X, y, cv=None)\n",
+            "search = GridSearchCV(model, params, cv=None)\n",
+            "search = RandomizedSearchCV(model, params, cv=5)\n",
+        ]
+        chronological_split = (
+            "train, test = train_test_split(X, test_size=0.2, shuffle=False)\n"
+        )
+        time_series_split = "cv = TimeSeriesSplit(n_splits=5, gap=48)\n"
+        temporal_cv_helper = (
+            "scores = cross_val_score(model, X, y, "
+            "cv=TimeSeriesSplit(n_splits=5, gap=48))\n"
+        )
+        temporal_search_cv = (
+            "search = GridSearchCV(model, params, "
+            "cv=TimeSeriesSplit(n_splits=5, gap=48))\n"
+        )
+        temporal_curve_helpers = [
+            "sizes, train, test = learning_curve(model, X, y, cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+            "train, test = validation_curve(model, X, y, param_name='alpha', param_range=[0.1, 1.0], cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+            "score, perm, p = permutation_test_score(model, X, y, cv=TimeSeriesSplit(n_splits=5, gap=48))\n",
+        ]
+        unresolved_cv_helper = "scores = cross_val_score(model, X, y, cv=cv)\n"
+
+        self.assertTrue(audit_python_source(random_kfold).ok)
+        self.assertEqual(
+            [
+                item.code
+                for item in audit_python_source(
+                    random_kfold, temporal_context="time_series"
+                ).findings
+            ],
+            ["SRC011"],
+        )
+        for source in grouped_cv:
+            with self.subTest(source=source):
+                self.assertTrue(audit_python_source(source).ok)
+                self.assertEqual(
+                    [
+                        item.code
+                        for item in audit_python_source(
+                            source, temporal_context="time_series"
+                        ).findings
+                    ],
+                    ["SRC011"],
+                )
+        self.assertFalse(
+            audit_python_source(random_split, temporal_context="time_series").ok
+        )
+        for source in default_cv_helpers:
+            with self.subTest(source=source):
+                self.assertTrue(audit_python_source(source).ok)
+                self.assertFalse(
+                    audit_python_source(source, temporal_context="time_series").ok
+                )
+        self.assertTrue(
+            audit_python_source(
+                chronological_split, temporal_context="time_series"
+            ).ok
+        )
+        self.assertTrue(
+            audit_python_source(
+                time_series_split, temporal_context="time_series"
+            ).ok
+        )
+        self.assertTrue(
+            audit_python_source(
+                temporal_cv_helper, temporal_context="time_series"
+            ).ok
+        )
+        self.assertTrue(
+            audit_python_source(
+                temporal_search_cv, temporal_context="time_series"
+            ).ok
+        )
+        for source in temporal_curve_helpers:
+            with self.subTest(source=source):
+                self.assertTrue(
+                    audit_python_source(source, temporal_context="time_series").ok
+                )
+        self.assertTrue(
+            audit_python_source(
+                unresolved_cv_helper, temporal_context="time_series"
+            ).ok
+        )
+
+    def test_time_series_context_gates_negative_numpy_roll_narrowly(self) -> None:
+        negative_roll = "future = np.roll(values, -1)\n"
+        keyword_negative_roll = "future = numpy.roll(values, shift=-2)\n"
+        positive_roll = "lag = np.roll(values, 1)\nlag[0] = np.nan\n"
+        unrelated_roll = "future = custom.roll(values, -1)\n"
+
+        self.assertTrue(audit_python_source(negative_roll).ok)
+        self.assertEqual(
+            [
+                item.code
+                for item in audit_python_source(
+                    negative_roll, temporal_context="time_series"
+                ).findings
+            ],
+            ["SRC012"],
+        )
+        self.assertEqual(
+            [
+                item.code
+                for item in audit_python_source(
+                    keyword_negative_roll, temporal_context="time_series"
+                ).findings
+            ],
+            ["SRC012"],
+        )
+        self.assertTrue(
+            audit_python_source(positive_roll, temporal_context="time_series").ok
+        )
+        self.assertTrue(
+            audit_python_source(unrelated_roll, temporal_context="time_series").ok
+        )
+
+    def test_unknown_temporal_context_fails_explicitly(self) -> None:
+        with self.assertRaisesRegex(ValueError, "temporal_context"):
+            audit_python_source("x = 1\n", temporal_context="unknown")
 
     def test_inline_suppression_can_be_targeted_or_generic(self) -> None:
         targeted = "x = df.x.shift(-1)  # nofuture: ignore[SRC001]\n"
@@ -298,6 +487,75 @@ class InvarianceTests(unittest.TestCase):
         self.assertTrue(future_mutation_invariance(self.safe_transform, rows).ok)
         self.assertFalse(
             future_mutation_invariance(self.leaking_transform, rows).ok
+        )
+
+    def test_future_mutation_rejects_invalid_interventions(self) -> None:
+        rows = [{"p": value} for value in (0.1, 0.2, 0.3, 0.4)]
+
+        def valid_probabilities(candidate_rows):
+            return all(0.0 <= row["p"] <= 1.0 for row in candidate_rows)
+
+        def safe_probability_transform(candidate_rows):
+            return [row["p"] * 2 for row in candidate_rows]
+
+        with self.assertRaisesRegex(ValueError, "input contract"):
+            future_mutation_invariance(
+                safe_probability_transform,
+                rows,
+                cut_points=[2],
+                input_validator=valid_probabilities,
+            )
+
+        def changes_past(candidate_rows, point):
+            changed = [dict(row) for row in candidate_rows]
+            changed[0]["p"] = 0.9
+            return changed
+
+        with self.assertRaisesRegex(ValueError, "historical prefix"):
+            future_mutation_invariance(
+                safe_probability_transform,
+                rows,
+                cut_points=[2],
+                mutator=changes_past,
+                input_validator=valid_probabilities,
+            )
+
+    def test_domain_valid_future_mutator_preserves_safe_and_detects_leak(self) -> None:
+        rows = [{"p": value} for value in (0.1, 0.2, 0.3, 0.4)]
+
+        def valid_probabilities(candidate_rows):
+            return all(0.0 <= row["p"] <= 1.0 for row in candidate_rows)
+
+        def bounded_mutator(candidate_rows, point):
+            changed = [dict(row) for row in candidate_rows]
+            for index in range(point, len(changed)):
+                changed[index]["p"] = 1.0 - changed[index]["p"]
+            return changed
+
+        def safe_transform(candidate_rows):
+            return [row["p"] for row in candidate_rows]
+
+        def leaking_transform(candidate_rows):
+            future_mean = sum(row["p"] for row in candidate_rows) / len(candidate_rows)
+            return [future_mean for _ in candidate_rows]
+
+        self.assertTrue(
+            future_mutation_invariance(
+                safe_transform,
+                rows,
+                cut_points=[2],
+                mutator=bounded_mutator,
+                input_validator=valid_probabilities,
+            ).ok
+        )
+        self.assertFalse(
+            future_mutation_invariance(
+                leaking_transform,
+                rows,
+                cut_points=[2],
+                mutator=bounded_mutator,
+                input_validator=valid_probabilities,
+            ).ok
         )
 
 

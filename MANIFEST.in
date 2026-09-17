@@ -1,0 +1,12 @@
+include CHANGELOG.md
+include CODE_OF_CONDUCT.md
+include CONTRIBUTING.md
+include ROADMAP.md
+include SECURITY.md
+include action.yml
+
+recursive-include benchmarks *.json *.py
+recursive-include docs *.html *.md *.txt *.xml *.yml
+recursive-include examples *.csv *.json *.py
+recursive-include schemas *.json
+recursive-include tests *.csv *.json *.py

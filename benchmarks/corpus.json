@@ -70,5 +70,123 @@
     "kind": "leak",
     "expected": ["SRC001", "SRC003"],
     "source": "lead = df.value.shift(-2)\ncentered = df.value.rolling(7, center=True).mean()\n"
+  },
+  {
+    "id": "negative-diff",
+    "kind": "leak",
+    "expected": ["SRC005"],
+    "source": "feature = df.value.diff(-1)\n"
+  },
+  {
+    "id": "positive-diff",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.diff(1)\n"
+  },
+  {
+    "id": "negative-pct-change",
+    "kind": "leak",
+    "expected": ["SRC005"],
+    "source": "feature = df.value.pct_change(periods=-2)\n"
+  },
+  {
+    "id": "fillna-backfill",
+    "kind": "leak",
+    "expected": ["SRC006"],
+    "source": "feature = df.value.fillna(method='bfill')\n"
+  },
+  {
+    "id": "fillna-forward-fill",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.fillna(method='ffill')\n"
+  },
+  {
+    "id": "interpolate-backward",
+    "kind": "leak",
+    "expected": ["SRC007"],
+    "source": "feature = df.value.interpolate(limit_direction='backward')\n"
+  },
+  {
+    "id": "interpolate-both",
+    "kind": "leak",
+    "expected": ["SRC007"],
+    "source": "feature = df.value.interpolate(limit_direction='both')\n"
+  },
+  {
+    "id": "interpolate-forward",
+    "kind": "safe",
+    "expected": [],
+    "source": "feature = df.value.interpolate(limit_direction='forward')\n"
+  },
+  {
+    "id": "same-dataframe-global-mean-feature",
+    "kind": "leak",
+    "expected": ["SRC008"],
+    "source": "df['mean_volume'] = df['volume'].mean()\n"
+  },
+  {
+    "id": "standalone-global-mean-summary",
+    "kind": "safe",
+    "expected": [],
+    "source": "mean_volume = df['volume'].mean()\n"
+  },
+  {
+    "id": "negative-absolute-iloc",
+    "kind": "leak",
+    "expected": ["SRC009"],
+    "source": "last_close = df.iloc[-1]['close']\n"
+  },
+  {
+    "id": "nonnegative-absolute-iloc",
+    "kind": "safe",
+    "expected": [],
+    "source": "first_close = df.iloc[0]['close']\n"
+  },
+  {
+    "id": "default-left-hour-resample",
+    "kind": "leak",
+    "expected": ["SRC010"],
+    "source": "hourly = df.resample('1h').last()\n"
+  },
+  {
+    "id": "explicit-left-minute-resample",
+    "kind": "leak",
+    "expected": ["SRC010"],
+    "source": "bars = df.resample('15min', label='left').max()\n"
+  },
+  {
+    "id": "right-labeled-hour-resample",
+    "kind": "safe",
+    "expected": [],
+    "source": "hourly = df.resample('1h', label='right').last()\n"
+  },
+  {
+    "id": "time-series-random-kfold",
+    "kind": "leak",
+    "temporal_context": "time_series",
+    "expected": ["SRC011"],
+    "source": "cv = KFold(n_splits=5, shuffle=True, random_state=42)\n"
+  },
+  {
+    "id": "time-series-chronological-split-control",
+    "kind": "safe",
+    "temporal_context": "time_series",
+    "expected": [],
+    "source": "cv = TimeSeriesSplit(n_splits=5, gap=48)\n"
+  },
+  {
+    "id": "time-series-negative-numpy-roll",
+    "kind": "leak",
+    "temporal_context": "time_series",
+    "expected": ["SRC012"],
+    "source": "future = np.roll(values, -1)\n"
+  },
+  {
+    "id": "time-series-positive-numpy-roll-masked-control",
+    "kind": "safe",
+    "temporal_context": "time_series",
+    "expected": [],
+    "source": "lag = np.roll(values, 1)\nlag[0] = np.nan\n"
   }
 ]
