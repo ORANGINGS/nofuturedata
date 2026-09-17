@@ -28,6 +28,7 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
     downstream = result["downstream_metric_inflation"]
     external = result["external_reproductions"]
     external_metrics = external["observed_current_metrics"]
+    reported = result["reported_cases"]
 
     conformance_score = summary["conformance_exact_cases"]
     notebook_score = (
@@ -64,6 +65,12 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
     external_assisted = external_metrics["assisted_detected_leaks"]
     external_leaks = external["leak_cases"]
     external_safe = external["safe_cases"]
+    reported_score = (reported["baseline_matches"], reported["cases"])
+    reported_leaks = (reported["layered_detected_leaks"], reported["leak_cases"])
+    reported_false_positive_boundaries = (
+        reported["known_static_false_positive_boundaries"],
+        reported["safe_cases"],
+    )
     causal_r2 = downstream["causal_metrics"]["r2"]
     leaking_r2 = downstream["leaking_metrics"]["r2"]
     r2_inflation = downstream["r2_inflation"]
@@ -104,6 +111,11 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
             f"source-only scanner detects {external_source} of {external_leaks}",
             f"keeps all {external_safe} safe controls clean",
             f"it detects {external_assisted} of {external_leaks}.",
+            (
+                "GitHub-reported regression result: "
+                f"**{reported_score[0]}/{reported_score[1]} reviewed baselines match**"
+            ),
+            f"checks surface {reported_leaks[0]}/{reported_leaks[1]} reported leaks",
         ],
         "docs/EVALUATION.md": [
             f"exact case match: **{conformance_score}**",
@@ -137,6 +149,15 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
                 f"**{external_assisted}/{external_leaks}"
             ),
             f"safe controls left clean: **{external_safe}/{external_safe}",
+            (
+                "Current reported-case result: "
+                f"**{reported_score[0]}/{reported_score[1]} reviewed baselines match**."
+            ),
+            f"layered checks surface **{reported_leaks[0]}/{reported_leaks[1]}** reported leak cases",
+            (
+                "known static false-positive boundaries: "
+                f"**{reported_false_positive_boundaries[0]}/{reported_false_positive_boundaries[1]}**"
+            ),
         ],
         "docs/RESEARCH_BRIEF.md": [
             f"| Static conformance corpus | **{conformance_score} exact match**",
@@ -162,6 +183,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
                 f"**{external_assisted}/{external_leaks} detected**"
             ),
             f"| External safe controls | **{external_safe}/{external_safe} clean**",
+            (
+                "| GitHub-reported cases | "
+                f"**{reported_score[0]}/{reported_score[1]} reviewed baselines**"
+            ),
         ],
         "docs/index.html": [
             f'<span class="score">{conformance_score}</span>',
@@ -178,6 +203,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
             (
                 f'<span class="score">{external_source}/{external_leaks} → '
                 f'{external_assisted}/{external_leaks}</span>'
+            ),
+            (
+                f'<span class="score">{reported_leaks[0]}/{reported_leaks[1]} · '
+                f'{reported_false_positive_boundaries[0]} FP</span>'
             ),
         ],
     }

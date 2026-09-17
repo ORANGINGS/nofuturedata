@@ -12,6 +12,10 @@ All notable changes to NoFutureData are documented here.
 - Expand that corpus to PySpark pandas and Snowpark pandas with paired negative/
   positive `shift` and `diff` cases, raising backend diversity from seven to nine
   projects/backends while reusing the existing generic `SRC001`/`SRC005` rules.
+- Add a separate public GitHub-reported-case corpus covering two reported timing
+  leaks and one maintainer-confirmed safe framework boundary. Keep the backward
+  as-of source-only miss recoverable through `LEAK001`, and preserve the safe
+  callback `SRC009` finding as a known false-positive boundary rather than hiding it.
 - Add a reviewer-facing evaluation/falsification note that separates conformance,
   method ablation, and documentation-backed evidence with explicit claim limits.
 - Add conservative static checks for same-dataframe whole-series aggregates

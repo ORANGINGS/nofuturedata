@@ -63,6 +63,7 @@ Current deterministic evidence:
 | External documented leaks | **12/21 detected** | source-only scanner behavior on curated reproductions spanning nine independent projects/backends, including PySpark pandas and Snowpark pandas |
 | External + declared temporal context | **21/21 detected** | opt-in context recovers the scikit-learn CV helpers and the narrow NumPy negative-roll reproduction while paired controls remain clean |
 | External safe controls | **17/17 clean** | no findings on the curated safe controls |
+| GitHub-reported cases | **3/3 reviewed baselines** | layered checks surface 2/2 reported leak claims; one source-only miss is recovered by availability time, while one maintainer-confirmed safe callback is retained as a known static false-positive boundary |
 
 These figures describe their named deterministic corpora only. They are not
 population-level estimates of real-world recall, precision, or prevalence.
@@ -117,6 +118,24 @@ This is intentionally a narrow historical result. The 17/17 figure describes the
 30-case corpus at `SRC012` acceptance time, not the larger current corpus or
 arbitrary NumPy/real-world pipeline recall.
 
+## Real user reports as falsification inputs
+
+The evaluation now keeps public GitHub issue reports separate from
+API-documentation reproductions. [Freqtrade #12507](https://github.com/freqtrade/freqtrade/issues/12507) supplies a reported
+availability-time failure that looks syntactically safe as a backward as-of join;
+an explicit `known_at` contract turns the stated timing into `LEAK001`.
+[CryptoMarket_Regime_Classifier #1](https://github.com/akash-kumar5/CryptoMarket_Regime_Classifier/issues/1) supplies a second reporter-authored timing claim
+where the negative next-bar target is also visible to `SRC001`.
+[Freqtrade #12168](https://github.com/freqtrade/freqtrade/issues/12168) supplies a counterexample in the other direction: maintainer-described callback
+truncation makes `iloc[-1]` safe in that framework context even though the generic
+static rule still emits `SRC009`.
+
+That last case is intentionally not "fixed" by weakening `SRC009` globally. It is
+kept as a public false-positive boundary until a general, testable
+framework-context contract justifies a narrower rule. The reporter-authored leak
+cases likewise remain labeled as claims rather than being promoted to
+maintainer-confirmed incidents.
+
 ## Engineering and reproducibility
 
 - zero mandatory runtime dependencies for the core;
@@ -164,6 +183,7 @@ tests the claim you care about:
 | Do all semantic source rules have exact conformance cases? | `python benchmarks/run_benchmark.py` |
 | Do notebook findings preserve exact rule IDs and cell locations? | `python benchmarks/run_notebook_corpus.py` |
 | Do documentation-backed reproductions match the reviewed baseline? | `python benchmarks/run_external_reproductions.py` |
+| Do public GitHub-reported leaks and safe boundaries match the reviewed behavior? | `python benchmarks/run_reported_cases.py` |
 | Does the whole research contract reproduce? | `python benchmarks/run_evaluation.py` |
 | Do reviewer-facing metrics still match executable results? | `python benchmarks/check_documented_metrics.py` |
 

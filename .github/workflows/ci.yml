@@ -24,6 +24,7 @@ jobs:
       - run: nofuture scan src tests examples/safe_pipeline.py --sarif nofuturedata.sarif
       - run: nofuture audit-manifest examples/temporal_contract.json
       - run: python benchmarks/run_notebook_corpus.py
+      - run: python benchmarks/run_reported_cases.py
       - run: python benchmarks/run_evaluation.py
       - run: python benchmarks/check_documented_metrics.py
       - name: capture machine-readable research evaluation
@@ -47,6 +48,8 @@ jobs:
           test -n "$sdist_dir"
           test -f "$sdist_dir/benchmarks/run_evaluation.py"
           test -f "$sdist_dir/benchmarks/run_notebook_corpus.py"
+          test -f "$sdist_dir/benchmarks/run_reported_cases.py"
+          test -f "$sdist_dir/benchmarks/reported_cases.json"
           test -f "$sdist_dir/benchmarks/check_documented_metrics.py"
           test -f "$sdist_dir/benchmarks/behavioral_generalization.py"
           test -f "$sdist_dir/benchmarks/revision_vintage_robustness.py"
@@ -57,6 +60,7 @@ jobs:
           test -f "$sdist_dir/notebooks/fixtures/manifest.json"
           test -f "$sdist_dir/notebooks/fixtures/src012_leak_negative_numpy_roll.ipynb"
           (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/run_notebook_corpus.py)
+          (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/run_reported_cases.py)
           (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/run_evaluation.py)
           (cd "$sdist_dir" && PYTHONPATH=src python benchmarks/check_documented_metrics.py)
           python -m venv .wheel-smoke

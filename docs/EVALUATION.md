@@ -290,6 +290,32 @@ set of explicitly temporal dimension names; `shift(time=1)` and a non-temporal
 `shift(axis=-1)` control stay clean rather than generalizing every negative
 keyword argument.
 
+### 11. Public GitHub-reported cases
+
+`benchmarks/reported_cases.json` adds a separate provenance class: public issue
+reports from real projects rather than API documentation or examples authored for
+NoFutureData. The runner preserves the reviewed detector behavior even when that
+behavior is a known limitation.
+
+Current reported-case result: **3/3 reviewed baselines match**.
+
+- layered checks surface **2/2** reported leak cases;
+- one reported leak is intentionally a source-only miss and is recovered by an
+  explicit availability-time contract (`LEAK001`);
+- the other reported leak emits both a static `SRC001` review gate and an
+  availability-time `LEAK001` finding;
+- known static false-positive boundaries: **1/1** safe case;
+- the safe boundary is a Freqtrade callback where a maintainer states that the
+  framework truncates the analyzed dataframe to the current backtest time, making
+  `iloc[-1]` safe in that callback even though `SRC009` cannot infer the framework
+  lifecycle from syntax alone.
+
+The leak reports are preserved as reporter claims. A GitHub issue is evidence of
+real user pain and a reproducible stated contract; it is not automatically proof
+that the upstream maintainer accepted the diagnosis. The corpus therefore tests
+NoFutureData's response to the reported contract and keeps a real false-positive
+boundary visible instead of converting issue counts into recall/precision claims.
+
 ## Falsification contract
 
 The project treats the following outcomes as evidence against its current
@@ -329,6 +355,7 @@ python benchmarks/behavioral_generalization.py
 python benchmarks/revision_vintage_robustness.py
 python benchmarks/property_revision_vintage.py
 python benchmarks/run_external_reproductions.py
+python benchmarks/run_reported_cases.py
 pytest
 nofuture audit-manifest examples/temporal_contract.json
 nofuture scan src tests examples/safe_pipeline.py benchmarks

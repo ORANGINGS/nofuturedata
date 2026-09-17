@@ -1,0 +1,59 @@
+[
+  {
+    "id": "freqtrade-12507-unclosed-htf-backward-asof",
+    "semantic_label": "reported_leak",
+    "evidence_class": "reporter_claim",
+    "source_project": "Freqtrade",
+    "source_url": "https://github.com/freqtrade/freqtrade/issues/12507",
+    "source_basis": "The issue reporter describes a 15-minute decision consuming body values from a still-open 1-hour candle through a backward merge_asof. The source syntax alone does not encode when the higher-timeframe value becomes final, so this case is intentionally a source-only miss and an availability-contract detection.",
+    "source": "merged = pd.merge_asof(lower, higher, on=\"date\", direction=\"backward\")\n",
+    "expected_static_codes": [],
+    "availability_records": [
+      {
+        "known_at": "2025-11-11T14:00:00+00:00",
+        "decision_time": "2025-11-11T13:15:00+00:00"
+      }
+    ],
+    "availability_options": {
+      "eligible_from": null,
+      "decision_time": "decision_time"
+    },
+    "expected_availability_codes": ["LEAK001"],
+    "review_note": "A backward as-of join can still violate point-in-time availability when the matched value was not final or knowable at the decision timestamp."
+  },
+  {
+    "id": "cryptomarket-regime-1-next-bar-target",
+    "semantic_label": "reported_leak",
+    "evidence_class": "reporter_claim_open_issue",
+    "source_project": "CryptoMarket_Regime_Classifier",
+    "source_url": "https://github.com/akash-kumar5/CryptoMarket_Regime_Classifier/issues/1",
+    "source_basis": "The open issue reports that current-bar features are paired with a next-bar regime target while the current bar is not yet complete at the stated live decision time. The negative target shift is a static review gate, while the availability record captures the underlying bar-completion timing claim.",
+    "source": "df[\"target\"] = df[\"regime\"].shift(-1)\n",
+    "expected_static_codes": ["SRC001"],
+    "availability_records": [
+      {
+        "known_at": "2026-02-09T10:05:00+00:00",
+        "decision_time": "2026-02-09T10:00:00+00:00"
+      }
+    ],
+    "availability_options": {
+      "eligible_from": null,
+      "decision_time": "decision_time"
+    },
+    "expected_availability_codes": ["LEAK001"],
+    "review_note": "The issue is preserved as a reporter claim, not as a maintainer-accepted diagnosis; the benchmark only asserts NoFutureData's reviewed response to the stated timing contract."
+  },
+  {
+    "id": "freqtrade-12168-callback-last-row-safe-boundary",
+    "semantic_label": "reported_safe",
+    "evidence_class": "maintainer_confirmed_framework_context",
+    "source_project": "Freqtrade",
+    "source_url": "https://github.com/freqtrade/freqtrade/issues/12168",
+    "source_basis": "A Freqtrade maintainer explains that backtesting truncates dp.get_analyzed_dataframe() to the callback's current time, making iloc[-1] safe in that callback context even though the same syntax over a full backtest dataframe can look into the future.",
+    "source": "last_candle = dataframe.iloc[-1]\n",
+    "expected_static_codes": ["SRC009"],
+    "expected_availability_codes": [],
+    "known_static_false_positive": true,
+    "review_note": "The static scanner intentionally lacks framework callback semantics, so this real-world safe context remains a documented false-positive boundary requiring suppression or domain review."
+  }
+]

@@ -1,14 +1,15 @@
 """Run the complete reproducible NoFutureData evaluation suite.
 
-The suite intentionally mixes ten evaluation components spanning static,
+The suite intentionally mixes eleven evaluation components spanning static,
 behavioral, and availability evidence: planted static conformance,
 paired Jupyter-notebook conformance, static-vs-runtime method ablation, a
 synthetic downstream metric-inflation demonstration, intervention-validity
 checks, intervention sensitivity, real-pandas behavioral transfer, fixed-seed
 revision/vintage robustness, property-based revision search, and
-documentation-backed external reproductions. A PASS means each reviewed
-benchmark contract still holds; it does not mean the external scanner has
-perfect recall.
+documentation-backed external reproductions, plus public GitHub-reported cases
+that preserve both real-world misses and known false-positive boundaries. A PASS
+means each reviewed benchmark contract still holds; it does not mean the
+external scanner has perfect recall.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from revision_vintage_robustness import run as run_revision_vintage_robustness
 from run_benchmark import run as run_conformance
 from run_external_reproductions import run as run_external_reproductions
 from run_notebook_corpus import run as run_notebook_corpus
+from run_reported_cases import run as run_reported_cases
 
 
 def run() -> dict[str, Any]:
@@ -42,6 +44,7 @@ def run() -> dict[str, Any]:
     revision_vintage = run_revision_vintage_robustness()
     revision_property = run_property_revision_vintage()
     external = run_external_reproductions()
+    reported = run_reported_cases()
     external_metrics = external["observed_current_metrics"]
     method_metrics = methods["metrics"]
     downstream_checks = downstream_impact["checks"]
@@ -65,6 +68,7 @@ def run() -> dict[str, Any]:
             and revision_vintage["ok"]
             and revision_property["ok"]
             and external["ok"]
+            and reported["ok"]
         ),
         "summary": {
             "conformance_exact_cases": f"{conformance['passed']}/{conformance['cases']}",
@@ -139,6 +143,19 @@ def run() -> dict[str, Any]:
             ],
             "external_safe_specificity": external_metrics["safe_case_specificity"],
             "external_source_projects": external["source_projects"],
+            "reported_cases_matched": reported["baseline_matches"],
+            "reported_cases_total": reported["cases"],
+            "reported_leak_cases": reported["leak_cases"],
+            "reported_layered_detected_leaks": reported["layered_detected_leaks"],
+            "reported_source_only_missed_leaks": reported["source_only_missed_leaks"],
+            "reported_availability_recovered_leaks": reported[
+                "availability_recovered_leaks"
+            ],
+            "reported_safe_cases": reported["safe_cases"],
+            "reported_known_static_false_positive_boundaries": reported[
+                "known_static_false_positive_boundaries"
+            ],
+            "reported_source_projects": reported["source_projects"],
         },
         "conformance": conformance,
         "notebook_corpus": notebooks,
@@ -150,10 +167,12 @@ def run() -> dict[str, Any]:
         "revision_vintage_robustness": revision_vintage,
         "revision_vintage_property": revision_property,
         "external_reproductions": external,
+        "reported_cases": reported,
         "claim_limit": (
             "PASS means the reviewed deterministic contracts reproduced. The external corpus is "
             "small and curated, and its observed rates are not population-level estimates of "
-            "real-world recall or specificity."
+            "real-world recall or specificity. GitHub issue reports are preserved as provenance "
+            "and reviewed detector behavior, not automatically as maintainer-validated diagnoses."
         ),
     }
 
@@ -257,6 +276,18 @@ def main() -> int:
             "external context-assisted-detection={:.3f} safe-specificity={:.3f}".format(
                 summary["external_assisted_documented_leak_detection_rate"],
                 summary["external_assisted_safe_specificity"],
+            )
+        )
+        print(
+            "reported-cases={}/{} layered-leaks={}/{} availability-recoveries={} "
+            "known-static-fp-boundaries={}/{}".format(
+                summary["reported_cases_matched"],
+                summary["reported_cases_total"],
+                summary["reported_layered_detected_leaks"],
+                summary["reported_leak_cases"],
+                summary["reported_availability_recovered_leaks"],
+                summary["reported_known_static_false_positive_boundaries"],
+                summary["reported_safe_cases"],
             )
         )
         print(result["claim_limit"])

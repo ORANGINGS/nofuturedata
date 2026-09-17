@@ -29,6 +29,9 @@ The project will prioritize evidence of real user pain over feature count.
   grouped/stateful, irregular missing-data, as-of alignment, resampling-boundary,
   and multi-column stateful transforms with explicit future-only mutation
   contracts.
+- Preserve public GitHub-reported timing failures and safe framework boundaries in
+  a separate regression corpus, including known static false positives rather than
+  optimizing them away without a general context contract.
 
 ## Next
 
@@ -54,6 +57,9 @@ The project will prioritize evidence of real user pain over feature count.
 - Continue expanding the externally sourced reproduction corpus beyond the
   current nine projects/backends before making real-world recall claims; preserve known
   misses rather than broadening rules without paired controls.
+- Keep public issue reports separate from documentation-derived reproductions;
+  record reporter claims and maintainer-confirmed boundaries distinctly, and do
+  not convert issue counts into population-level accuracy claims.
 - Keep `SRC008` whole-frame aggregation and `SRC009` absolute-index rules narrow;
   expand their externally sourced safe controls before broadening either rule.
 - Keep `SRC010` limited to fixed/day interval aggregation with default/left

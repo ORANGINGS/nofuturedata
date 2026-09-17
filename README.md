@@ -542,6 +542,44 @@ made against the previously published miss and paired control rather than by
 broadening every `.roll(...)` call. These curated, non-random rates are not
 estimates of real-world recall or specificity.
 
+### GitHub-reported cases and known boundaries
+
+`benchmarks/reported_cases.json` is kept separate from the documentation-backed
+API corpus. It turns public GitHub issue reports into a small regression set while
+preserving the strength of each source instead of treating every report as a
+maintainer-confirmed diagnosis:
+
+```bash
+python benchmarks/run_reported_cases.py
+```
+
+GitHub-reported regression result: **3/3 reviewed baselines match**; layered
+checks surface 2/2 reported leaks, one source-only miss is recovered by the
+availability contract, and one maintainer-confirmed safe callback remains a
+documented static false-positive boundary.
+
+- [Freqtrade issue #12507](https://github.com/freqtrade/freqtrade/issues/12507)
+  reports an unclosed higher-timeframe candle entering a
+  15-minute decision through `merge_asof(direction="backward")`. The static
+  syntax is clean because backward joins are normally causal; once the reported
+  higher-timeframe value is modeled with its real availability time,
+  `audit_availability()` emits `LEAK001`.
+- [CryptoMarket_Regime_Classifier issue #1](https://github.com/akash-kumar5/CryptoMarket_Regime_Classifier/issues/1)
+  reports current-bar features paired
+  with a next-bar target before the current bar is complete. The negative target
+  shift emits `SRC001`, and the stated bar-completion timing emits `LEAK001`.
+- [Freqtrade issue #12168](https://github.com/freqtrade/freqtrade/issues/12168)
+  documents the opposite boundary: a maintainer explains
+  that callback data are truncated to the current backtest time, so
+  `dataframe.iloc[-1]` can be safe there. `SRC009` still flags the syntax because
+  NoFutureData does not infer framework callback semantics; the case is retained
+  as a known false positive rather than hidden from the evaluation.
+
+The two leak cases above originate in reporter-authored issues. Their inclusion
+proves only the reviewed response to the stated timing contracts, not that the
+upstream maintainers accepted every diagnosis or that these three cases estimate
+real-world error rates.
+
 ## GitHub Action
 
 Downstream projects can put a source scan in CI:
