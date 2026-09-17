@@ -203,7 +203,7 @@ Multiple paths are accepted, so the same command works naturally with
 pre-commit's filename passing:
 
 ```bash
-nofuture scan src tests notebooks
+nofuture scan src tests examples/safe_pipeline.py
 ```
 
 Missing paths and an entirely empty scan fail closed instead of returning a
@@ -211,6 +211,20 @@ misleading PASS.
 
 Python code cells inside `.ipynb` files are scanned too. Findings report the
 notebook cell number; markdown and non-Python notebooks are ignored.
+
+The repository also ships a tiny runnable notebook corpus under
+[`notebooks/fixtures/`](notebooks/fixtures/): one leaking and one safe notebook
+for each shipped semantic source rule. CI checks exact rule IDs, notebook cell
+numbers, fixture contents, paired rule coverage, and the context-only behavior of
+`SRC011`/`SRC012`:
+
+```bash
+python benchmarks/run_notebook_corpus.py
+```
+
+Current notebook-fixture result: **24/24 cases pass across 12/12 paired semantic
+rules**. These are deterministic conformance examples, not a real-world recall
+estimate.
 
 Current static rules flag:
 
@@ -264,7 +278,7 @@ FAIL: 1 finding(s), 5 row/line(s) scanned
 For GitHub Code Scanning or another SARIF consumer:
 
 ```bash
-nofuture scan src notebooks --sarif nofuturedata.sarif
+nofuture scan src tests examples/safe_pipeline.py --sarif nofuturedata.sarif
 ```
 
 ## 6. Test the pipeline, not only the syntax
@@ -334,9 +348,9 @@ These are conformance metrics on a planted corpus, not estimates of recall on
 arbitrary real-world temporal leakage.
 
 Run the full research evaluation (static conformance, method ablation,
-downstream metric inflation, intervention validity and sensitivity, real-pandas
-behavioral transfer, revision/vintage robustness, and external reproductions)
-with one command:
+paired notebook conformance, downstream metric inflation, intervention validity
+and sensitivity, real-pandas behavioral transfer, revision/vintage robustness,
+and external reproductions) with one command:
 
 ```bash
 python -m pip install -e ".[pandas,dev]"

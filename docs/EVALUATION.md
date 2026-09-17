@@ -42,7 +42,25 @@ Current result:
 These are conformance metrics on a corpus designed around the shipped rules.
 They are not estimates of real-world scanner recall.
 
-### 2. Static vs behavioral method ablation
+### 2. Jupyter notebook fixture corpus
+
+`notebooks/fixtures/` contains 24 minimal notebooks: exactly one planted leak and
+one paired safe control for each of the 12 shipped semantic `SRC001+` rules. The
+fixtures are generated deterministically from `notebooks/fixtures/manifest.json`
+and validated by `benchmarks/run_notebook_corpus.py`.
+
+Current notebook result: **24/24 cases pass across 12/12 paired semantic rules**.
+For every leaking notebook, CI checks the exact rule ID and notebook cell number;
+for every safe notebook it requires zero findings. The runner also verifies that
+the checked-in notebook JSON still matches the manifest source, that finding
+metadata points back to the correct notebook path, and that the contextual
+`SRC011`/`SRC012` leak examples remain clean without declared time-series context.
+
+The notebook corpus is a deterministic interface/conformance test. It does not
+measure how often temporal leakage occurs in arbitrary notebooks or estimate
+real-world scanner recall.
+
+### 3. Static vs behavioral method ablation
 
 `benchmarks/method_comparison.py` contains six cases: four leaks and two safe
 controls. Two leaks use explicit source patterns known by the AST scanner; two
@@ -61,7 +79,7 @@ the behavioral tests catch indirect future dependence that the current static
 rules do not. It does not imply that behavioral testing has perfect recall on
 arbitrary real pipelines.
 
-### 3. Synthetic downstream metric inflation
+### 4. Synthetic downstream metric inflation
 
 `benchmarks/downstream_metric_inflation.py` connects the source-level problem to
 a model-level consequence. A fixed-seed AR(1) process produces 2,400 forecasting
@@ -85,7 +103,7 @@ This is a synthetic mechanism demonstration, not an estimate of how much
 leakage improves metrics in real projects. Its purpose is to make the practical
 failure mode reviewable while keeping the causal claim deliberately narrow.
 
-### 4. Mutation intervention validity
+### 5. Mutation intervention validity
 
 `benchmarks/mutation_validity.py` tests four materially different input
 contracts: bounded probabilities, valid OHLC candles, simplex-normalized
@@ -120,7 +138,7 @@ for arbitrary schemas. They establish an executable contract for testing
 domain-aware counterfactuals without interpreting malformed interventions as
 leakage evidence.
 
-### 5. Intervention sensitivity
+### 6. Intervention sensitivity
 
 `benchmarks/intervention_sensitivity.py` asks whether the causal/leaking
 conclusions survive more than one hand-picked counterfactual. It evaluates all
@@ -139,7 +157,7 @@ The grid is intentionally fixed and reviewable. A failure at any valid cut point
 or mutation strength is evidence against the current behavioral claim; the
 benchmark does not select or report only the best-performing intervention.
 
-### 6. Real-pandas behavioral transfer
+### 7. Real-pandas behavioral transfer
 
 `benchmarks/behavioral_generalization.py` removes one simplifying assumption
 from the method ablation: its transforms call pandas directly instead of using
@@ -170,7 +188,7 @@ This transfer result reduces dependence on benchmark-authored surrogate
 implementations, but the 18 operations are still curated and finite. It does
 not establish recall over arbitrary pandas pipelines or other dataframe systems.
 
-### 7. Revision/vintage generative robustness
+### 8. Revision/vintage generative robustness
 
 `benchmarks/revision_vintage_robustness.py` uses fixed seed `20260916` to
 generate 24 different append-only vintage histories with explicit positive
@@ -194,7 +212,7 @@ observation count, vintage count, values, eligibility delays, timestamps, and
 row order. This is a deterministic generative sample, not a formal proof over all
 revision histories.
 
-### 8. Property-based revision/vintage search
+### 9. Property-based revision/vintage search
 
 `benchmarks/property_revision_vintage.py` lifts the five fixed-seed invariants
 plus seven multi-column/null edge invariants into Hypothesis strategies. Unlike
@@ -218,7 +236,7 @@ The property strategy is deliberately bounded. It strengthens counterexample
 search beyond the 24 fixed-seed histories, but it remains finite evidence rather
 than a proof over all revision processes.
 
-### 9. Documentation-backed external reproductions
+### 10. Documentation-backed external reproductions
 
 `benchmarks/external_reproductions.json` preserves examples derived from public
 Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, and Dask documentation, including

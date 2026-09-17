@@ -1,13 +1,14 @@
 """Run the complete reproducible NoFutureData evaluation suite.
 
-The suite intentionally mixes nine evaluation components spanning static,
+The suite intentionally mixes ten evaluation components spanning static,
 behavioral, and availability evidence: planted static conformance,
-static-vs-runtime method ablation, a synthetic downstream metric-inflation
-demonstration, intervention-validity checks, intervention sensitivity,
-real-pandas behavioral transfer, fixed-seed revision/vintage robustness,
-property-based revision search, and documentation-backed external reproductions.
-A PASS means each reviewed benchmark contract still holds; it does not mean the
-external scanner has perfect recall.
+paired Jupyter-notebook conformance, static-vs-runtime method ablation, a
+synthetic downstream metric-inflation demonstration, intervention-validity
+checks, intervention sensitivity, real-pandas behavioral transfer, fixed-seed
+revision/vintage robustness, property-based revision search, and
+documentation-backed external reproductions. A PASS means each reviewed
+benchmark contract still holds; it does not mean the external scanner has
+perfect recall.
 """
 
 from __future__ import annotations
@@ -27,10 +28,12 @@ from property_revision_vintage import run as run_property_revision_vintage
 from revision_vintage_robustness import run as run_revision_vintage_robustness
 from run_benchmark import run as run_conformance
 from run_external_reproductions import run as run_external_reproductions
+from run_notebook_corpus import run as run_notebook_corpus
 
 
 def run() -> dict[str, Any]:
     conformance = run_conformance()
+    notebooks = run_notebook_corpus()
     methods = run_method_comparison()
     downstream_impact = run_downstream_metric_inflation()
     mutation_validity = run_mutation_validity()
@@ -53,6 +56,7 @@ def run() -> dict[str, Any]:
         "package_version": nofuturedata.__version__,
         "ok": bool(
             conformance["ok"]
+            and notebooks["ok"]
             and methods["ok"]
             and downstream_impact["ok"]
             and mutation_validity["ok"]
@@ -65,6 +69,14 @@ def run() -> dict[str, Any]:
         "summary": {
             "conformance_exact_cases": f"{conformance['passed']}/{conformance['cases']}",
             "conformance_safe_specificity": conformance["metrics"]["safe_case_specificity"],
+            "notebook_cases_passed": notebooks["passed"],
+            "notebook_cases_total": notebooks["cases"],
+            "notebook_paired_rules": len(notebooks["paired_rules"]),
+            "notebook_shipped_rules": len(notebooks["shipped_semantic_rules"]),
+            "notebook_contextual_source_only_clean": notebooks[
+                "contextual_source_only_clean"
+            ],
+            "notebook_contextual_leaks": notebooks["contextual_leaks"],
             "method_static_recall": method_metrics["static"]["recall"],
             "method_runtime_union_recall": method_metrics["runtime_union"]["recall"],
             "downstream_causal_r2": downstream_impact["causal_metrics"]["r2"],
@@ -129,6 +141,7 @@ def run() -> dict[str, Any]:
             "external_source_projects": external["source_projects"],
         },
         "conformance": conformance,
+        "notebook_corpus": notebooks,
         "method_comparison": methods,
         "downstream_metric_inflation": downstream_impact,
         "mutation_validity": mutation_validity,
@@ -160,6 +173,16 @@ def main() -> int:
             "conformance={} safe-specificity={:.3f}".format(
                 summary["conformance_exact_cases"],
                 summary["conformance_safe_specificity"],
+            )
+        )
+        print(
+            "notebook-corpus={}/{} paired-rules={}/{} contextual-source-only-clean={}/{}".format(
+                summary["notebook_cases_passed"],
+                summary["notebook_cases_total"],
+                summary["notebook_paired_rules"],
+                summary["notebook_shipped_rules"],
+                summary["notebook_contextual_source_only_clean"],
+                summary["notebook_contextual_leaks"],
             )
         )
         print(

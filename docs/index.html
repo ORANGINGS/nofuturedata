@@ -80,6 +80,11 @@ FAIL: 2 finding(s)
 
     <section class="grid" style="margin-top:24px">
       <div class="card">
+        <h2>Notebook locations are executable evidence</h2>
+        <div class="bench"><span class="score">24/24 · 12/12</span><span class="good">notebooks · paired rules</span></div>
+        <p>Each semantic source rule has one tiny leaking notebook and one paired safe notebook. CI verifies exact rule IDs, notebook cell numbers, canonical fixture contents, and source-only cleanliness for the context-gated rules.</p>
+      </div>
+      <div class="card">
         <h2>Method ablation</h2>
         <div class="bench"><span class="score">0.50 → 1.00</span><span class="good">leak recall on the 6-case ablation</span></div>
         <p>Static AST rules catch explicit known patterns. Prefix and future-mutation invariance also catch indirect future dependencies. The experiment keeps two safe controls clean and makes the boundary between the methods measurable.</p>

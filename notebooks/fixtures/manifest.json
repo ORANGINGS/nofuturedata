@@ -1,0 +1,221 @@
+{
+  "schema_version": "nofuturedata-notebook-corpus-v1",
+  "cases": [
+    {
+      "id": "src001-leak-negative-shift",
+      "rule": "SRC001",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src001_leak_negative_shift.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.shift(-1)\n",
+      "expected": [{"code": "SRC001", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src001-safe-positive-shift",
+      "rule": "SRC001",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src001_safe_positive_shift.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.shift(1)\n",
+      "expected": []
+    },
+    {
+      "id": "src002-leak-backfill",
+      "rule": "SRC002",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src002_leak_backfill.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.bfill()\n",
+      "expected": [{"code": "SRC002", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src002-safe-forward-fill",
+      "rule": "SRC002",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src002_safe_forward_fill.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.ffill()\n",
+      "expected": []
+    },
+    {
+      "id": "src003-leak-centered-rolling",
+      "rule": "SRC003",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src003_leak_centered_rolling.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.rolling(5, center=True).mean()\n",
+      "expected": [{"code": "SRC003", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src003-safe-trailing-rolling",
+      "rule": "SRC003",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src003_safe_trailing_rolling.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.rolling(5).mean()\n",
+      "expected": []
+    },
+    {
+      "id": "src004-leak-forward-asof",
+      "rule": "SRC004",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src004_leak_forward_asof.ipynb",
+      "temporal_context": null,
+      "source": "out = left.merge_asof(right, on='ts', direction='forward')\n",
+      "expected": [{"code": "SRC004", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src004-safe-backward-asof",
+      "rule": "SRC004",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src004_safe_backward_asof.ipynb",
+      "temporal_context": null,
+      "source": "out = left.merge_asof(right, on='ts', direction='backward')\n",
+      "expected": []
+    },
+    {
+      "id": "src005-leak-negative-diff",
+      "rule": "SRC005",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src005_leak_negative_diff.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.diff(-1)\n",
+      "expected": [{"code": "SRC005", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src005-safe-positive-diff",
+      "rule": "SRC005",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src005_safe_positive_diff.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.diff(1)\n",
+      "expected": []
+    },
+    {
+      "id": "src006-leak-fillna-backfill",
+      "rule": "SRC006",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src006_leak_fillna_backfill.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.fillna(method='bfill')\n",
+      "expected": [{"code": "SRC006", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src006-safe-fillna-forward",
+      "rule": "SRC006",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src006_safe_fillna_forward.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.fillna(method='ffill')\n",
+      "expected": []
+    },
+    {
+      "id": "src007-leak-backward-interpolation",
+      "rule": "SRC007",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src007_leak_backward_interpolation.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.interpolate(limit_direction='backward')\n",
+      "expected": [{"code": "SRC007", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src007-safe-forward-interpolation",
+      "rule": "SRC007",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src007_safe_forward_interpolation.ipynb",
+      "temporal_context": null,
+      "source": "feature = df.value.interpolate(limit_direction='forward')\n",
+      "expected": []
+    },
+    {
+      "id": "src008-leak-global-aggregate-feature",
+      "rule": "SRC008",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src008_leak_global_aggregate_feature.ipynb",
+      "temporal_context": null,
+      "source": "df['mean_volume'] = df['volume'].mean()\n",
+      "expected": [{"code": "SRC008", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src008-safe-global-summary",
+      "rule": "SRC008",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src008_safe_global_summary.ipynb",
+      "temporal_context": null,
+      "source": "mean_volume = df['volume'].mean()\n",
+      "expected": []
+    },
+    {
+      "id": "src009-leak-negative-iloc",
+      "rule": "SRC009",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src009_leak_negative_iloc.ipynb",
+      "temporal_context": null,
+      "source": "last_close = df.iloc[-1]['close']\n",
+      "expected": [{"code": "SRC009", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src009-safe-first-iloc",
+      "rule": "SRC009",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src009_safe_first_iloc.ipynb",
+      "temporal_context": null,
+      "source": "first_close = df.iloc[0]['close']\n",
+      "expected": []
+    },
+    {
+      "id": "src010-leak-left-labeled-resample",
+      "rule": "SRC010",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src010_leak_left_labeled_resample.ipynb",
+      "temporal_context": null,
+      "source": "hourly = df.resample('1h').last()\n",
+      "expected": [{"code": "SRC010", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src010-safe-right-labeled-resample",
+      "rule": "SRC010",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src010_safe_right_labeled_resample.ipynb",
+      "temporal_context": null,
+      "source": "hourly = df.resample('1h', label='right').last()\n",
+      "expected": []
+    },
+    {
+      "id": "src011-leak-random-kfold",
+      "rule": "SRC011",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src011_leak_random_kfold.ipynb",
+      "temporal_context": "time_series",
+      "source": "cv = KFold(n_splits=5, shuffle=True, random_state=42)\n",
+      "expected": [{"code": "SRC011", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src011-safe-time-series-split",
+      "rule": "SRC011",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src011_safe_time_series_split.ipynb",
+      "temporal_context": "time_series",
+      "source": "cv = TimeSeriesSplit(n_splits=5, gap=48)\n",
+      "expected": []
+    },
+    {
+      "id": "src012-leak-negative-numpy-roll",
+      "rule": "SRC012",
+      "kind": "leak",
+      "path": "notebooks/fixtures/src012_leak_negative_numpy_roll.ipynb",
+      "temporal_context": "time_series",
+      "source": "future = np.roll(values, -1)\n",
+      "expected": [{"code": "SRC012", "cell": 2, "line": 1}]
+    },
+    {
+      "id": "src012-safe-positive-numpy-roll",
+      "rule": "SRC012",
+      "kind": "safe",
+      "path": "notebooks/fixtures/src012_safe_positive_numpy_roll.ipynb",
+      "temporal_context": "time_series",
+      "source": "lag = np.roll(values, 1)\nlag[0] = np.nan\n",
+      "expected": []
+    }
+  ]
+}

@@ -51,6 +51,7 @@ Current deterministic evidence:
 | Evaluation | Result | What it supports |
 | --- | ---: | --- |
 | Static conformance corpus | **31/31 exact match** | all 12 shipped semantic `SRC001+` rules, including contextual rules, have exact cases and paired safe controls where applicable |
+| Jupyter fixture corpus | **24/24 cases; 12/12 rule pairs** | every semantic source rule has one tiny leaking notebook and one safe notebook; exact rule IDs and cell numbers are checked in CI |
 | Static method ablation | **0.500 recall** | syntax rules intentionally miss indirect future dependencies |
 | Runtime-union ablation | **1.000 recall** | behavioral checks catch the two indirect leaks in this six-case ablation |
 | Synthetic downstream impact | **R² 0.630 → 0.991 (+0.361)** | same OLS model and chronological split; adding one unavailable future feature inflates the fixed-seed holdout while `SRC001` flags the source pattern |
@@ -156,6 +157,7 @@ tests the claim you care about:
 | --- | --- |
 | Does the newest falsification loop reproduce? | `python -m pytest -q tests/test_audit.py -k numpy_roll` |
 | Do all semantic source rules have exact conformance cases? | `python benchmarks/run_benchmark.py` |
+| Do notebook findings preserve exact rule IDs and cell locations? | `python benchmarks/run_notebook_corpus.py` |
 | Do documentation-backed reproductions match the reviewed baseline? | `python benchmarks/run_external_reproductions.py` |
 | Does the whole research contract reproduce? | `python benchmarks/run_evaluation.py` |
 | Do reviewer-facing metrics still match executable results? | `python benchmarks/check_documented_metrics.py` |

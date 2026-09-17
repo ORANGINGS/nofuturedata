@@ -24,11 +24,18 @@ ROOT = Path(__file__).parents[1]
 def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
     summary = result["summary"]
     conformance = result["conformance"]
+    notebooks = result["notebook_corpus"]
     downstream = result["downstream_metric_inflation"]
     external = result["external_reproductions"]
     external_metrics = external["observed_current_metrics"]
 
     conformance_score = summary["conformance_exact_cases"]
+    notebook_score = (
+        summary["notebook_cases_passed"],
+        summary["notebook_cases_total"],
+        summary["notebook_paired_rules"],
+        summary["notebook_shipped_rules"],
+    )
     mutation = (
         summary["mutation_validity_checks_passed"],
         summary["mutation_validity_checks_total"],
@@ -73,6 +80,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
                 f"{conformance['leak_cases']} planted leaks and"
             ),
             f"{conformance['safe_cases']} safe controls.",
+            (
+                f"Current notebook-fixture result: **{notebook_score[0]}/{notebook_score[1]} "
+                f"cases pass across {notebook_score[2]}/{notebook_score[3]} paired semantic"
+            ),
             f"Current mutation-validity result: **{mutation[0]}/{mutation[1]} checks passing**.",
             f"current result is **{sensitivity[0]}/{sensitivity[1]} checks passing**",
             (
@@ -96,6 +107,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
         ],
         "docs/EVALUATION.md": [
             f"exact case match: **{conformance_score}**",
+            (
+                f"Current notebook result: **{notebook_score[0]}/{notebook_score[1]} cases pass "
+                f"across {notebook_score[2]}/{notebook_score[3]} paired semantic rules**."
+            ),
             f"Current result: **{mutation[0]}/{mutation[1]} checks pass**.",
             f"Current result: **{sensitivity[0]}/{sensitivity[1]} checks pass**.",
             f"The R² inflation is **{r2_inflation:+.3f}**",
@@ -125,6 +140,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
         ],
         "docs/RESEARCH_BRIEF.md": [
             f"| Static conformance corpus | **{conformance_score} exact match**",
+            (
+                f"| Jupyter fixture corpus | **{notebook_score[0]}/{notebook_score[1]} cases; "
+                f"{notebook_score[2]}/{notebook_score[3]} rule pairs**"
+            ),
             f"| Mutation intervention validity | **{mutation[0]}/{mutation[1]} checks pass**",
             f"| Intervention sensitivity | **{sensitivity[0]}/{sensitivity[1]} checks pass**",
             (
@@ -146,6 +165,10 @@ def _required_fragments(result: dict[str, Any]) -> dict[str, list[str]]:
         ],
         "docs/index.html": [
             f'<span class="score">{conformance_score}</span>',
+            (
+                f'<span class="score">{notebook_score[0]}/{notebook_score[1]} · '
+                f'{notebook_score[2]}/{notebook_score[3]}</span>'
+            ),
             f'<span class="score">{mutation[0]}/{mutation[1]}</span>',
             f'<span class="score">{sensitivity[0]}/{sensitivity[1]}</span>',
             f'<span class="score">{causal_r2:.3f} → {leaking_r2:.3f}</span>',

@@ -8,5 +8,6 @@ include action.yml
 recursive-include benchmarks *.json *.py
 recursive-include docs *.html *.md *.txt *.xml *.yml
 recursive-include examples *.csv *.json *.py
+recursive-include notebooks *.ipynb *.json
 recursive-include schemas *.json
 recursive-include tests *.csv *.json *.py

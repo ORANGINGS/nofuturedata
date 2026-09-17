@@ -42,6 +42,11 @@ All notable changes to NoFutureData are documented here.
   temporal context, provenance, paired controls, and explicit acceptance
   criteria; document the failure-to-regression workflow for contributors. CI now
   uploads the Python 3.12 unified evaluation JSON as a reviewable artifact.
+- Add a checked-in Jupyter fixture corpus with one leaking and one safe notebook
+  for every semantic `SRC001+` rule. The notebook benchmark verifies exact rule
+  IDs, cell numbers, canonical fixture contents, paired 12/12 rule coverage, and
+  source-only cleanliness for context-gated `SRC011`/`SRC012`; CI and the sdist
+  smoke test now enforce the corpus.
 - Add an official Dask `Series.shift` leak/control pair as a sixth independent
   external project; the existing negative-shift rule transfers without a Dask-
   specific detector while the positive-shift control remains clean.
