@@ -318,5 +318,77 @@
     "source_basis": "The same Dask API documents positive periods; a positive one-row shift is the paired previous-row control for time-ordered data.",
     "source": "previous_value = series.shift(1)\n",
     "expected_current_codes": []
+  },
+  {
+    "id": "pyspark-pandas-negative-shift",
+    "kind": "leak",
+    "source_project": "PySpark pandas",
+    "source_url": "https://spark.apache.org/docs/latest/api/python/reference/pyspark.pandas/api/pyspark.pandas.Series.shift.html",
+    "source_basis": "Official PySpark pandas Series.shift documentation states that periods can be positive or negative; on time-ordered rows, a negative one-row shift exposes the next observation to the current row.",
+    "source": "future_value = series.shift(-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "pyspark-pandas-positive-shift-control",
+    "kind": "safe",
+    "source_project": "PySpark pandas",
+    "source_url": "https://spark.apache.org/docs/latest/api/python/reference/pyspark.pandas/api/pyspark.pandas.Series.shift.html",
+    "source_basis": "The same PySpark pandas API documents positive periods; a positive one-row shift is the paired previous-row control for ordered data.",
+    "source": "previous_value = series.shift(1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "pyspark-pandas-negative-diff",
+    "kind": "leak",
+    "source_project": "PySpark pandas",
+    "source_url": "https://spark.apache.org/docs/latest/api/python/reference/pyspark.pandas/api/pyspark.pandas.Series.diff.html",
+    "source_basis": "Official PySpark pandas Series.diff documentation accepts negative periods and shows a negative-period example as a difference with the following value; on ordered rows that introduces a future dependency.",
+    "source": "future_delta = series.diff(-1)\n",
+    "expected_current_codes": ["SRC005"]
+  },
+  {
+    "id": "pyspark-pandas-positive-diff-control",
+    "kind": "safe",
+    "source_project": "PySpark pandas",
+    "source_url": "https://spark.apache.org/docs/latest/api/python/reference/pyspark.pandas/api/pyspark.pandas.Series.diff.html",
+    "source_basis": "The same PySpark pandas documentation defines the default positive period as comparison with the previous row, providing the paired causal control.",
+    "source": "past_delta = series.diff(1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "snowpark-pandas-negative-shift",
+    "kind": "leak",
+    "source_project": "Snowpark pandas",
+    "source_url": "https://docs.snowflake.com/en/developer-guide/snowpark/reference/python/latest/modin/pandas_api/modin.pandas.Series.shift",
+    "source_basis": "Official Snowpark pandas Series.shift documentation states that periods can be positive or negative and includes a negative-period example that moves later values into earlier rows.",
+    "source": "future_value = series.shift(-1)\n",
+    "expected_current_codes": ["SRC001"]
+  },
+  {
+    "id": "snowpark-pandas-positive-shift-control",
+    "kind": "safe",
+    "source_project": "Snowpark pandas",
+    "source_url": "https://docs.snowflake.com/en/developer-guide/snowpark/reference/python/latest/modin/pandas_api/modin.pandas.Series.shift",
+    "source_basis": "The same Snowpark pandas API documents positive periods; a positive one-row shift is the paired previous-row control for time-ordered data.",
+    "source": "previous_value = series.shift(1)\n",
+    "expected_current_codes": []
+  },
+  {
+    "id": "snowpark-pandas-negative-diff",
+    "kind": "leak",
+    "source_project": "Snowpark pandas",
+    "source_url": "https://docs.snowflake.com/en/developer-guide/snowpark/reference/python/latest/modin/pandas_api/modin.pandas.Series.diff",
+    "source_basis": "Official Snowpark pandas Series.diff documentation accepts negative periods and demonstrates diff(periods=-1); on ordered rows that compares with the following observation.",
+    "source": "future_delta = series.diff(-1)\n",
+    "expected_current_codes": ["SRC005"]
+  },
+  {
+    "id": "snowpark-pandas-positive-diff-control",
+    "kind": "safe",
+    "source_project": "Snowpark pandas",
+    "source_url": "https://docs.snowflake.com/en/developer-guide/snowpark/reference/python/latest/modin/pandas_api/modin.pandas.Series.diff",
+    "source_basis": "The same Snowpark pandas documentation defines positive periods against previous rows, providing the paired causal control.",
+    "source": "past_delta = series.diff(1)\n",
+    "expected_current_codes": []
   }
 ]

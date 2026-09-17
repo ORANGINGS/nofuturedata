@@ -96,8 +96,8 @@ FAIL: 2 finding(s)
       </div>
       <div class="card">
         <h2>Context-dependent rules stay explicit</h2>
-        <div class="bench"><span class="score">8/17 → 17/17</span><span class="good">source-only → declared temporal context</span></div>
-        <p>The external corpus spans seven projects: Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, and Dask. Negative-shift semantics transfer across Polars, Xarray, and Dask; explicit context recovers single-level, nested, grouped/panel, and metadata-routing-capable scikit-learn CV helpers while paired <code>TimeSeriesSplit</code> controls stay clean. The previously published NumPy negative-<code>roll</code> miss is now covered by a narrow context-only rule with a paired lag control.</p>
+        <div class="bench"><span class="score">12/21 → 21/21</span><span class="good">source-only → declared temporal context</span></div>
+        <p>The external corpus now spans nine projects/backends: Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, Dask, PySpark pandas, and Snowpark pandas. Existing negative-shift/diff semantics transfer across those dataframe implementations without backend-specific detector code; explicit context recovers single-level, nested, grouped/panel, and metadata-routing-capable scikit-learn CV helpers while paired <code>TimeSeriesSplit</code> controls stay clean. The NumPy negative-<code>roll</code> case remains a narrow context-only rule with a paired lag control.</p>
       </div>
       <div class="card">
         <h2>Interventions must be valid</h2>

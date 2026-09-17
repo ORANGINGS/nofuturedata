@@ -509,19 +509,20 @@ public documentation rather than examples invented for this project. It includes
 Freqtrade's documented negative-shift, whole-dataframe aggregation, absolute
 `iloc`, resampling, and safe trailing-window patterns; pandas forward/backward
 fill semantics; scikit-learn's time-series cross-validation guidance; Polars,
-Xarray, and Dask shift semantics; and NumPy circular roll semantics. Each
-entry records its source URL and the detector behavior reviewed for the current
-version.
+Xarray, Dask, PySpark pandas, and Snowpark pandas shift/diff semantics; and NumPy
+circular roll semantics. Each entry records its source URL and the detector
+behavior reviewed for the current version.
 
 ```bash
 python benchmarks/run_external_reproductions.py
 ```
 
-On this small documentation-backed corpus the source-only scanner detects 8 of 17
-documented leak cases and keeps all 13 safe controls clean. With declared
-time-series context it detects 17 of 17. `SRC010` covers the narrow fixed/day
+On this small documentation-backed corpus the source-only scanner detects 12 of 21
+documented leak cases and keeps all 17 safe controls clean. With declared
+time-series context it detects 21 of 21. `SRC010` covers the narrow fixed/day
 resampling case when an aggregate is labeled at the left interval edge, and the
-existing negative-shift rule transfers to both Polars and Dask. Two source-only
+existing negative-shift/diff rules also transfer across independently maintained
+Polars, Xarray, Dask, PySpark pandas, and Snowpark pandas APIs. Two source-only
 scikit-learn single-level CV misses and the nested `GridSearchCV` +
 `cross_val_score` reproduction become conditional `SRC011` detections under
 explicit time-series context. `GroupKFold` and `GroupShuffleSplit` are also

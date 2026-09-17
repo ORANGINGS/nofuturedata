@@ -60,9 +60,9 @@ Current deterministic evidence:
 | Real-pandas behavioral transfer | **18/18 cases match** | 9/9 leaks detected and 9/9 causal controls clean across ordinary, grouped/stateful, irregular missing-data, as-of alignment, resampling-boundary, and multi-column stateful pandas transforms with explicit future-mutation contracts |
 | Revision/vintage robustness | **120/120 checks pass** | 24 generated histories preserve explicit eligibility delays, select the correct latest eligible vintage under row permutation, and consistently reject an injected duplicate `known_at` with `REV001` |
 | Revision/vintage property search | **768/768 invariant evaluations pass** | 64 Hypothesis examples search and shrink counterexamples across 12 invariants spanning the fixed-seed core plus multi-column keys, `REV002`, null reasons, and null-to-value revisions |
-| External documented leaks | **8/17 detected** | source-only scanner behavior on curated reproductions spanning Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, and Dask |
-| External + declared temporal context | **17/17 detected** | opt-in context recovers the scikit-learn CV helpers and the narrow NumPy negative-roll reproduction while paired controls remain clean |
-| External safe controls | **13/13 clean** | no findings on the curated safe controls |
+| External documented leaks | **12/21 detected** | source-only scanner behavior on curated reproductions spanning nine independent projects/backends, including PySpark pandas and Snowpark pandas |
+| External + declared temporal context | **21/21 detected** | opt-in context recovers the scikit-learn CV helpers and the narrow NumPy negative-roll reproduction while paired controls remain clean |
+| External safe controls | **17/17 clean** | no findings on the curated safe controls |
 
 These figures describe their named deterministic corpora only. They are not
 population-level estimates of real-world recall, precision, or prevalence.
@@ -84,9 +84,13 @@ group separation by itself is not treated as chronological evaluation.
 The same contract now covers `learning_curve`, `validation_curve`, and
 `permutation_test_score` when their `cv` is omitted, `None`, or an integer;
 explicit `TimeSeriesSplit` controls for all three remain clean.
-The external transfer set now also includes Xarray: `shift(time=-1)` is detected
+The external transfer set also includes Xarray: `shift(time=-1)` is detected
 by a narrow temporal-dimension extension of `SRC001`, while `shift(time=1)` and
 non-temporal negative-keyword controls remain clean.
+PySpark pandas and Snowpark pandas add independent backend-transfer evidence for
+the existing generic rules: official `Series.shift` and `Series.diff`
+documentation supports negative periods, and the paired positive-period controls
+remain clean without any backend-specific detector code.
 The same external corpus previously preserved `np.roll(values, -1)` as a known
 miss even under time-series context. NumPy's documented circular shift semantics
 made the temporal risk concrete; the miss is now closed by `SRC012`, which only
@@ -106,11 +110,12 @@ process rather than only as a higher benchmark number.
 | Hypothesis | In explicitly time-ordered data, a literal negative NumPy roll is future-dependent, but the same syntax is not inherently temporal outside a declared time-series context. |
 | Conservative intervention | Add `SRC012` only for `np.roll` / `numpy.roll` attribute calls with a literal negative shift when `temporal_context="time_series"` is enabled. |
 | Falsification controls | Default source-only scan must stay clean; a masked positive-roll lag and an unrelated `custom.roll(..., -1)` must stay clean under temporal context. |
-| Acceptance result | Unit tests pass; static conformance is 31/31 with 12/12 semantic-rule coverage; external context-assisted detection becomes 17/17 while source-only detection remains 8/17 and all 13 external safe controls remain clean. |
+| Acceptance result | At the 30-case snapshot used to accept `SRC012`, unit tests passed; static conformance was 31/31 with 12/12 semantic-rule coverage; external context-assisted detection became 17/17 while source-only detection remained 8/17 and all 13 external safe controls remained clean. |
 | Remaining boundary | Imported aliases, dynamic shift expressions, and arbitrary roll-like APIs remain unresolved instead of being guessed by the static scanner. |
 
-This is intentionally a narrow result. The 17/17 figure describes the committed
-curated corpus, not arbitrary NumPy or real-world pipeline recall.
+This is intentionally a narrow historical result. The 17/17 figure describes the
+30-case corpus at `SRC012` acceptance time, not the larger current corpus or
+arbitrary NumPy/real-world pipeline recall.
 
 ## Engineering and reproducibility
 

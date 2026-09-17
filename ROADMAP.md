@@ -52,7 +52,7 @@ The project will prioritize evidence of real user pain over feature count.
 - Keep the planted static corpus paired with safe controls and exact rule-ID expectations.
 - Keep the static-vs-runtime method ablation in CI so method boundaries stay explicit.
 - Continue expanding the externally sourced reproduction corpus beyond the
-  current seven projects before making real-world recall claims; preserve known
+  current nine projects/backends before making real-world recall claims; preserve known
   misses rather than broadening rules without paired controls.
 - Keep `SRC008` whole-frame aggregation and `SRC009` absolute-index rules narrow;
   expand their externally sourced safe controls before broadening either rule.

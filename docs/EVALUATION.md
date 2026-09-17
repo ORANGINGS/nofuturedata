@@ -239,16 +239,17 @@ than a proof over all revision processes.
 ### 10. Documentation-backed external reproductions
 
 `benchmarks/external_reproductions.json` preserves examples derived from public
-Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, and Dask documentation, including
-source URLs, context requirements, and the reviewed current detector behavior.
+Freqtrade, pandas, scikit-learn, Polars, Xarray, NumPy, Dask, PySpark pandas,
+and Snowpark pandas documentation, including source URLs, context requirements,
+and the reviewed current detector behavior.
 
 Current result:
 
-- documented leak cases: **17**
-- detected by current static scanner: **8/17 (0.471)**
-- detected with declared time-series context where applicable: **17/17 (1.000)**
-- safe controls: **13**
-- safe controls left clean: **13/13 (1.000 specificity on this corpus)**
+- documented leak cases: **21**
+- detected by current static scanner: **12/21 (0.571)**
+- detected with declared time-series context where applicable: **21/21 (1.000)**
+- safe controls: **17**
+- safe controls left clean: **17/17 (1.000 specificity on this corpus)**
 
 Three earlier misses are now covered with deliberately narrow rules: `SRC008`
 flags a direct whole-series aggregate only when it is assigned back to a column
@@ -275,6 +276,12 @@ positions and therefore creates a future dependency on ordered data. `SRC012`
 detects only the narrow `np`/`numpy` attribute-call form with a literal negative
 shift under declared time-series context. Source-only scans, arbitrary `.roll`
 methods, dynamic shifts, and the paired positive-roll lag control remain clean.
+
+PySpark pandas and Snowpark pandas provide two additional backend-transfer checks.
+Their official `Series.shift` and `Series.diff` documentation explicitly supports
+negative periods, while the paired positive-period examples use previous rows.
+The existing `SRC001` and `SRC005` rules reproduce those documented semantics
+without any backend-specific special case.
 
 Xarray provides a separate transfer test for the existing shift rule. Its
 `DataArray.shift` API accepts offsets keyed by dimension, so `shift(time=-1)`

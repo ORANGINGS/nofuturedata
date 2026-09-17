@@ -9,6 +9,9 @@ All notable changes to NoFutureData are documented here.
   document method boundaries without claiming real-world recall.
 - Add an externally sourced reproduction corpus with provenance URLs and preserve
   known misses as reviewed baseline evidence instead of overstating scanner recall.
+- Expand that corpus to PySpark pandas and Snowpark pandas with paired negative/
+  positive `shift` and `diff` cases, raising backend diversity from seven to nine
+  projects/backends while reusing the existing generic `SRC001`/`SRC005` rules.
 - Add a reviewer-facing evaluation/falsification note that separates conformance,
   method ablation, and documentation-backed evidence with explicit claim limits.
 - Add conservative static checks for same-dataframe whole-series aggregates
